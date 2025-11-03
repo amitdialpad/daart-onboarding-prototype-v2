@@ -1,0 +1,4460 @@
+<template>
+  <div class="workspace-container">
+    <!-- Top Navigation -->
+    <div class="top-nav">
+      <div class="nav-left">
+        <div class="app-title">Dialpad Agents</div>
+      </div>
+      <div class="nav-tabs">
+        <button class="nav-tab active">AGENTS</button>
+        <button class="nav-tab" @click="goTo('/insights')">INSIGHTS</button>
+        <button class="nav-tab" @click="goTo('/billing-placeholder')">BILLING</button>
+      </div>
+      <div class="nav-right">
+        <div class="usage-meter">
+          <div class="usage-text">{{ usageData.callsUsed }}/{{ usageData.callsLimit }} calls</div>
+          <div class="usage-bar">
+            <div class="usage-fill" :class="usageColor" :style="{ width: usagePercentage + '%' }"></div>
+          </div>
+        </div>
+        <div class="profile-dropdown" @click="toggleProfileMenu">
+          <span class="profile-email">admin@company.com</span>
+          <span class="dropdown-arrow">{{ showProfileMenu ? '▲' : '▼' }}</span>
+          <div v-if="showProfileMenu" class="dropdown-menu" @click.stop>
+            <button class="dropdown-item" @click="goTo('/settings')">Settings</button>
+            <button class="dropdown-item" @click="goTo('/profile')">Profile</button>
+            <button class="dropdown-item" @click="signOut">Sign Out</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Layout: Content Only -->
+    <div class="main-layout">
+      <!-- Agent Workspace -->
+      <div class="content-area">
+        <div v-if="agents.length === 0" class="no-selection">
+          <div class="no-selection-content">
+            <h2>No Agents Yet</h2>
+            <p>Create your first agent to get started</p>
+            <button class="btn-primary" @click="createNewAgent">+ Create First Agent</button>
+          </div>
+        </div>
+
+        <div v-else class="agent-workspace">
+          <!-- Agent Header with Selector -->
+          <div class="workspace-header">
+            <div class="workspace-header-left">
+              <!-- Agent Selector Dropdown -->
+              <div class="agent-selector-wrapper">
+                <label class="agent-selector-label">Agent:</label>
+                <div class="agent-selector" @click="toggleAgentDropdown">
+                  <div class="agent-selector-current">
+                    <div class="agent-status-dot" :class="selectedAgent?.status"></div>
+                    <span class="agent-selector-name">{{ selectedAgent?.name || 'Select Agent' }}</span>
+                    <span class="agent-selector-arrow">▼</span>
+                  </div>
+
+                  <!-- Dropdown Menu -->
+                  <div v-if="showAgentDropdown" class="agent-dropdown" @click.stop>
+                    <div v-for="agent in agents"
+                         :key="agent.id"
+                         class="agent-dropdown-item"
+                         :class="{ active: selectedAgentId === agent.id }"
+                         @click="selectAgentFromDropdown(agent.id)">
+                      <div class="agent-status-dot" :class="agent.status"></div>
+                      <div class="agent-dropdown-info">
+                        <div class="agent-dropdown-name">{{ agent.name }}</div>
+                        <div class="agent-dropdown-meta">{{ channelLabel(agent.channel) }}</div>
+                      </div>
+                    </div>
+                    <div class="agent-dropdown-divider"></div>
+                    <div class="agent-dropdown-item new-agent" @click="createNewAgentFromDropdown">
+                      <span class="new-agent-icon">+</span>
+                      <span>Create New Agent</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div v-if="selectedAgent" class="agent-meta">
+                <span class="meta-status" :class="selectedAgent.status">
+                  {{ selectedAgent.statusText }}
+                </span>
+                <span class="meta-separator">·</span>
+                <span>{{ channelLabel(selectedAgent.channel) }}</span>
+                <span class="meta-separator">·</span>
+                <span>Updated {{ selectedAgent.lastUpdated }}</span>
+              </div>
+            </div>
+            <div class="workspace-header-right">
+              <button class="btn-secondary" @click="saveAgent" :disabled="saving || !selectedAgent">
+                {{ saving ? 'Saving...' : 'Save' }}
+              </button>
+              <button v-if="selectedAgent && selectedAgent.status === 'draft'"
+                      class="btn-primary"
+                      @click="goLive">
+                Go Live
+              </button>
+              <button v-else-if="selectedAgent && selectedAgent.status === 'live'"
+                      class="btn-secondary"
+                      @click="pause">
+                Pause Agent
+              </button>
+            </div>
+          </div>
+
+          <!-- Success Notification -->
+          <div v-if="notification" class="notification" :class="notification.type">
+            {{ notification.message }}
+          </div>
+
+          <!-- Workspace Tabs -->
+          <div class="workspace-tabs">
+            <button v-for="tab in tabs"
+                    :key="tab.id"
+                    class="workspace-tab"
+                    :class="{ active: activeTab === tab.id }"
+                    @click="handleTabClick(tab.id)">
+              {{ tab.label }}
+              <span v-if="tab.id === 'monitor' && unreadConversationCount > 0" class="tab-badge">
+                {{ unreadConversationCount }}
+              </span>
+            </button>
+          </div>
+
+          <!-- Tab Content -->
+          <div class="tab-content-area">
+            <!-- BUILD Tab -->
+            <div v-if="activeTab === 'build'" class="tab-panel">
+              <div class="build-layout">
+                <!-- Section Navigator -->
+                <div class="build-sections-nav">
+                  <div v-for="section in buildSections"
+                       :key="section.id"
+                       class="section-nav-item"
+                       :class="{ active: activeBuildSection === section.id }"
+                       @click="activeBuildSection = section.id">
+                    {{ section.label }}
+                  </div>
+                </div>
+
+                <!-- Main Content Area -->
+                <div class="build-main">
+                  <!-- COMPASS Validation Panel (shows on all sections) -->
+                  <div v-if="validationMessages.length > 0" class="validation-panel">
+                    <div class="validation-header" @click="validationExpanded = !validationExpanded">
+                      <div class="validation-title">
+                        <span class="validation-icon">⚠️</span>
+                        <span>COMPASS Validation ({{ validationMessages.length }} {{ validationMessages.length === 1 ? 'issue' : 'issues' }})</span>
+                      </div>
+                      <button class="validation-toggle">{{ validationExpanded ? '−' : '+' }}</button>
+                    </div>
+                    <div v-if="validationExpanded" class="validation-content">
+                      <div v-for="msg in validationMessages"
+                           :key="msg.id"
+                           class="validation-message"
+                           :class="msg.severity">
+                        <div class="validation-msg-header">
+                          <span class="validation-severity">{{ msg.severity.toUpperCase() }}</span>
+                          <span class="validation-field">{{ msg.field }}</span>
+                        </div>
+                        <div class="validation-msg-text">{{ msg.message }}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Configuration Section -->
+                  <div v-if="activeBuildSection === 'configuration'" class="config-section">
+                    <h3>Agent Configuration</h3>
+
+                    <div class="form-group">
+                      <label>Agent Name</label>
+                      <input v-model="selectedAgent.name" type="text" class="input-field">
+                    </div>
+
+                    <div class="form-group">
+                      <label>Description</label>
+                      <textarea v-model="selectedAgent.description" rows="2" class="input-field"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                      <label>Behavior Instructions</label>
+                      <textarea v-model="selectedAgent.instructions" rows="6" class="input-field"></textarea>
+                      <div class="hint">Guide how your agent should respond to customers</div>
+                    </div>
+                  </div>
+
+                  <!-- Knowledge Base Section -->
+                  <div v-if="activeBuildSection === 'knowledge'" class="config-section">
+                    <h3>Knowledge Base</h3>
+
+                    <div class="knowledge-upload">
+                      <div class="upload-area">
+                        <p>Drag & drop files here or click to browse</p>
+                        <button class="btn-secondary">Upload Documents</button>
+                      </div>
+
+                      <div class="knowledge-list">
+                        <div v-if="selectedAgent.knowledge && selectedAgent.knowledge.length > 0">
+                          <div v-for="doc in selectedAgent.knowledge"
+                               :key="doc.id"
+                               class="knowledge-item">
+                            <div class="knowledge-info">
+                              <div class="knowledge-name">{{ doc.name }}</div>
+                              <div class="knowledge-details">{{ doc.size }} · {{ doc.topics }} topics</div>
+                            </div>
+                            <div class="knowledge-status">✓ {{ doc.status }}</div>
+                          </div>
+                        </div>
+                        <div v-else class="knowledge-empty">
+                          No documents uploaded yet
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Skills Section -->
+                  <div v-if="activeBuildSection === 'skills'" class="config-section">
+                    <h3>Skills</h3>
+
+                    <div class="skills-list">
+                      <div v-if="selectedAgent.skills && selectedAgent.skills.length > 0">
+                        <div v-for="skill in selectedAgent.skills"
+                             :key="skill.id"
+                             class="skill-item">
+                          <div class="skill-info">
+                            <div class="skill-name">{{ skill.name }}</div>
+                            <div class="skill-desc">{{ skill.description }}</div>
+                          </div>
+                          <div class="skill-actions">
+                            <button class="btn-skill-test" @click="openSkillTest(skill)">
+                              Test
+                            </button>
+                            <label class="toggle">
+                              <input type="checkbox" v-model="skill.enabled">
+                              <span class="toggle-slider"></span>
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                      <div v-else class="skills-empty">
+                        No skills configured
+                      </div>
+
+                      <button class="btn-add" @click="openSkillsBuilder">+ Add Skill</button>
+                    </div>
+                  </div>
+
+                  <!-- Conversation Flow Section -->
+                  <div v-if="activeBuildSection === 'flow'" class="config-section">
+                    <h3>Voice Conversation Flow</h3>
+                    <p class="section-desc">Create custom call flows with branching logic, menus, and prompts for phone interactions</p>
+
+                    <div class="flow-intro-card">
+                      <div class="flow-intro-content">
+                        <div class="flow-intro-badge">VOICE CHANNELS</div>
+                        <div class="flow-intro-title">Advanced Workflow Builder</div>
+                        <div class="flow-intro-text">
+                          Design sophisticated voice agent flows with a visual node-based editor. Build IVR-like experiences with branching menus, collect customer input, play custom audio prompts, and create decision trees that guide callers to the right outcome.
+                        </div>
+                        <div class="flow-intro-features">
+                          <div class="flow-feature-item">
+                            <div class="flow-feature-dot"></div>
+                            <span>Drag-and-drop node editor</span>
+                          </div>
+                          <div class="flow-feature-item">
+                            <div class="flow-feature-dot"></div>
+                            <span>Play, Collect, Menu, and API nodes</span>
+                          </div>
+                          <div class="flow-feature-item">
+                            <div class="flow-feature-dot"></div>
+                            <span>Record audio prompts in-browser</span>
+                          </div>
+                          <div class="flow-feature-item">
+                            <div class="flow-feature-dot"></div>
+                            <span>Pre-built templates for common scenarios</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="flow-current-status">
+                      <div class="flow-status-row">
+                        <div class="flow-status-left">
+                          <div class="flow-status-label">Current Flow</div>
+                          <div class="flow-status-name">Default Conversational Pattern</div>
+                        </div>
+                        <button class="btn-secondary" disabled>
+                          Open Workflow Builder
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="flow-visual-preview">
+                      <div class="flow-preview-label">Default Flow Structure</div>
+                      <div class="flow-canvas">
+                        <div class="flow-node flow-node-start">
+                          <div class="flow-node-label">Start Call</div>
+                          <div class="flow-node-desc">Incoming call received</div>
+                        </div>
+                        <div class="flow-connector"></div>
+                        <div class="flow-node flow-node-play">
+                          <div class="flow-node-label">Play Greeting</div>
+                          <div class="flow-node-desc">Welcome message</div>
+                        </div>
+                        <div class="flow-connector"></div>
+                        <div class="flow-node flow-node-collect">
+                          <div class="flow-node-label">Collect Input</div>
+                          <div class="flow-node-desc">Listen to customer</div>
+                        </div>
+                        <div class="flow-connector"></div>
+                        <div class="flow-node flow-node-agent">
+                          <div class="flow-node-label">Agent Processing</div>
+                          <div class="flow-node-desc">AI responds with answer</div>
+                        </div>
+                        <div class="flow-connector"></div>
+                        <div class="flow-node flow-node-end">
+                          <div class="flow-node-label">End Call</div>
+                          <div class="flow-node-desc">Complete</div>
+                        </div>
+                      </div>
+                      <div class="flow-preview-note">
+                        The Workflow Builder opens in a dedicated editor where you can create complex branching flows, add menus with multiple options, connect to external APIs, and build sophisticated call handling logic.
+                      </div>
+                    </div>
+                  </div>
+
+                <!-- Testing Panel -->
+                <div class="test-panel">
+                  <!-- Digital Testing (Chat/SMS) -->
+                  <div v-if="currentTestChannel === 'digital'" class="test-content">
+                    <div class="test-content-header">
+                      <span>Digital Agent Testing</span>
+                      <button class="btn-icon" @click="clearTestMessages">Clear</button>
+                    </div>
+                    <div class="test-chat">
+                      <div class="test-messages">
+                        <div v-for="msg in testMessages"
+                             :key="msg.id"
+                             class="test-message"
+                             :class="msg.sender">
+                          {{ msg.text }}
+                        </div>
+                        <div v-if="quickTestLoading" class="test-message agent typing">
+                          <span class="dot"></span>
+                          <span class="dot"></span>
+                          <span class="dot"></span>
+                        </div>
+
+                        <!-- Suggested Prompts (show when no messages) -->
+                        <div v-if="testMessages.length === 0 && !quickTestLoading" class="test-suggestions">
+                          <div class="suggestions-label">Try asking:</div>
+                          <div class="suggestions-chips">
+                            <button v-for="suggestion in quickTestSuggestions"
+                                    :key="suggestion"
+                                    class="suggestion-chip"
+                                    @click="sendSuggestion(suggestion)">
+                              {{ suggestion }}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="test-input">
+                        <input v-model="quickTestMsg"
+                               type="text"
+                               placeholder="Type a message to test..."
+                               @keyup.enter="sendQuickTest"
+                               :disabled="quickTestLoading"
+                               class="input-field">
+                        <button @click="sendQuickTest" :disabled="quickTestLoading" class="btn-send">
+                          {{ quickTestLoading ? 'Sending...' : 'Send' }}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Voice Testing (Phone) -->
+                  <div v-if="currentTestChannel === 'voice'" class="test-content">
+                    <div class="voice-test-panel">
+                      <div class="voice-test-status">
+                        <div class="voice-status-indicator" :class="voiceCallStatus">
+                          <div class="status-dot"></div>
+                          <span>{{ voiceCallStatusText }}</span>
+                        </div>
+                        <div class="voice-test-info">
+                          <div class="info-row">
+                            <span class="info-label">Test Number:</span>
+                            <span class="info-value">+1 (555) 0000</span>
+                          </div>
+                          <div class="info-row">
+                            <span class="info-label">Duration:</span>
+                            <span class="info-value">{{ voiceCallDuration }}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="voice-test-actions">
+                        <button v-if="voiceCallStatus === 'idle'"
+                                class="btn-voice-call"
+                                @click="startVoiceTest">
+                          Start Test Call
+                        </button>
+                        <button v-else-if="voiceCallStatus === 'connected'"
+                                class="btn-voice-end"
+                                @click="endVoiceTest">
+                          End Call
+                        </button>
+                        <div v-else-if="voiceCallStatus === 'connecting'" class="voice-connecting">
+                          <div class="loading-dots">
+                            <span class="dot"></span>
+                            <span class="dot"></span>
+                            <span class="dot"></span>
+                          </div>
+                          Connecting...
+                        </div>
+                      </div>
+
+                      <div class="voice-test-transcript">
+                        <div class="transcript-header">Live Transcript</div>
+                        <div class="transcript-messages">
+                          <div v-for="msg in voiceTranscript"
+                               :key="msg.id"
+                               class="transcript-message"
+                               :class="msg.speaker">
+                            <div class="transcript-speaker">{{ msg.speaker === 'user' ? 'You' : 'Agent' }}</div>
+                            <div class="transcript-text">{{ msg.text }}</div>
+                            <div class="transcript-time">{{ msg.timestamp }}</div>
+                          </div>
+                          <div v-if="voiceTranscript.length === 0" class="transcript-empty">
+                            Start a test call to see the transcript
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
+            <!-- TEST Tab -->
+            <div v-if="activeTab === 'test'" class="tab-panel">
+              <div class="test-layout">
+                <div class="test-scenarios-section">
+                  <div class="section-header">
+                    <h3>Test Scenarios {{ selectedAgent.agentType === 'phone' ? '(Voice Agent)' : '(Chat Agent)' }}</h3>
+                    <div class="header-actions">
+                      <button class="btn-secondary" @click="openTestBuilder">+ Create Test</button>
+                      <button class="btn-primary" @click="runAllTests" :disabled="runningAllTests">
+                        {{ runningAllTests ? 'Running Tests...' : 'Run All Tests' }}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div v-if="selectedAgent.testScenarios && selectedAgent.testScenarios.length > 0"
+                       class="scenarios-list">
+                    <div v-for="scenario in selectedAgent.testScenarios"
+                         :key="scenario.id"
+                         class="scenario-card"
+                         :class="{ running: runningTests[scenario.id] }">
+                      <div class="scenario-header">
+                        <div class="scenario-name">{{ scenario.name }}</div>
+                        <button class="btn-run"
+                                @click="runScenario(scenario)"
+                                :disabled="runningTests[scenario.id]">
+                          {{ runningTests[scenario.id] ? 'Running...' : (scenarioResults[scenario.id] ? '✓ Passed' : 'Run Test') }}
+                        </button>
+                      </div>
+                      <div class="scenario-prompt">Prompt: "{{ scenario.prompt }}"</div>
+                      <div v-if="scenarioResults[scenario.id]" class="scenario-result">
+                        <div class="result-label">Response:</div>
+                        <div class="result-text">{{ scenarioResults[scenario.id] }}</div>
+                      </div>
+                      <div v-if="runningTests[scenario.id] && !scenarioResults[scenario.id]" class="scenario-loading">
+                        <div class="loading-dots">
+                          <span class="dot"></span>
+                          <span class="dot"></span>
+                          <span class="dot"></span>
+                        </div>
+                        Testing...
+                      </div>
+                    </div>
+                  </div>
+
+                  <div v-else class="scenarios-empty">
+                    <p>No test scenarios configured</p>
+                    <button class="btn-secondary">+ Add Scenario</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- DEPLOY Tab -->
+            <div v-if="activeTab === 'deploy'" class="tab-panel">
+              <div class="deploy-layout">
+                <!-- Deploy Main Content -->
+                <div class="deploy-main">
+                  <h2>Deploy Your Agent</h2>
+                  <p class="section-desc">Configure channels and get your agent live</p>
+
+                <!-- Primary Channel Section -->
+                <div class="channel-section-header">
+                  <div class="section-header-title">Primary Channel</div>
+                  <div class="section-header-desc">Your agent is live on the channel you selected during onboarding. Toggle to enable/disable.</div>
+                </div>
+
+                <div class="channels-grid-single">
+                  <!-- Primary Channel - Web Chat -->
+                  <div v-if="primaryChannel === 'web-chat'"
+                       class="channel-card"
+                       :class="{ enabled: deploymentChannels.includes('web-chat') }">
+                    <div class="channel-header">
+                      <div class="channel-header-content">
+                        <div class="channel-name">Web Chat</div>
+                        <div class="channel-desc">Add a chat widget to your website</div>
+                      </div>
+                      <label class="channel-toggle" @click.stop>
+                        <input type="checkbox"
+                               :checked="deploymentChannels.includes('web-chat')"
+                               @change="toggleChannel('web-chat')">
+                        <span class="channel-toggle-slider"></span>
+                      </label>
+                    </div>
+
+                    <div v-if="deploymentChannels.includes('web-chat')" class="channel-config">
+                      <div class="config-item">
+                        <label>Widget Position</label>
+                        <select class="input-field-small">
+                          <option>Bottom Right</option>
+                          <option>Bottom Left</option>
+                          <option>Top Right</option>
+                          <option>Top Left</option>
+                        </select>
+                      </div>
+                      <div class="config-item">
+                        <label>Widget Color</label>
+                        <input type="color" value="#000000" class="input-field-small">
+                      </div>
+                      <div class="config-item">
+                        <label>Greeting Message</label>
+                        <input type="text" class="input-field-small" placeholder="Hi! How can I help you?">
+                      </div>
+                    </div>
+
+                    <!-- Installation Instructions for Web Chat (directly under primary) -->
+                    <div v-if="deploymentChannels.includes('web-chat')" class="deployment-subsection">
+                      <h4>Installation Instructions</h4>
+                      <p class="section-desc-small">Add this code to your website</p>
+
+                      <div class="code-block">
+                        &lt;script src="https://widget.daart.ai/v1/widget.js"&gt;&lt;/script&gt;<br>
+                        &lt;script&gt;<br>
+                        &nbsp;&nbsp;DAART.init({ agentId: "{{ selectedAgent.id }}" });<br>
+                        &lt;/script&gt;
+                      </div>
+
+                      <button class="btn-secondary">Copy Code</button>
+                    </div>
+                  </div>
+
+                  <!-- Primary Channel - Phone -->
+                  <div v-if="primaryChannel === 'phone'"
+                       class="channel-card"
+                       :class="{ enabled: deploymentChannels.includes('phone') }">
+                    <div class="channel-header">
+                      <div class="channel-header-content">
+                        <div class="channel-name">Phone / Voice</div>
+                        <div class="channel-desc">Answer incoming phone calls with AI</div>
+                      </div>
+                      <label class="channel-toggle" @click.stop>
+                        <input type="checkbox"
+                               :checked="deploymentChannels.includes('phone')"
+                               @change="toggleChannel('phone')">
+                        <span class="channel-toggle-slider"></span>
+                      </label>
+                    </div>
+
+                    <div v-if="deploymentChannels.includes('phone')" class="channel-config">
+                      <div class="config-item">
+                        <label>Phone Number</label>
+                        <select class="input-field-small">
+                          <option>+1 (555) 0123</option>
+                          <option>+1 (555) 0124</option>
+                          <option>+ Provision New Number</option>
+                        </select>
+                      </div>
+                      <div class="config-item">
+                        <label>Voice</label>
+                        <select class="input-field-small">
+                          <option>Default (Neural)</option>
+                          <option>Male (Standard)</option>
+                          <option>Female (Standard)</option>
+                        </select>
+                      </div>
+                      <div class="config-item">
+                        <label>Call Forwarding (optional)</label>
+                        <input type="tel" class="input-field-small" placeholder="+1 (555) 0000">
+                      </div>
+                    </div>
+
+                    <!-- Installation Instructions for Phone (directly under primary) -->
+                    <div v-if="deploymentChannels.includes('phone')" class="deployment-subsection">
+                      <h4>Setup Instructions</h4>
+                      <p class="section-desc-small">Your agent will answer calls to the selected number</p>
+
+                      <div class="info-box">
+                        <strong>Phone Number:</strong> +1 (555) 0123<br>
+                        <strong>Status:</strong> Active<br>
+                        <strong>Routing:</strong> AI Agent → Fallback (if configured)
+                      </div>
+
+                      <button class="btn-secondary">Test Call</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Additional Channels Section -->
+                <div class="channel-section-header additional-channels-header">
+                  <div class="section-header-title">Additional Channels</div>
+                  <div class="section-header-desc">Enable more channels to create an omnichannel experience</div>
+                </div>
+
+                <div class="channels-grid">
+                  <!-- Web Chat (if not primary) -->
+                  <div v-if="additionalChannels.includes('web-chat')"
+                       class="channel-card"
+                       :class="{ enabled: deploymentChannels.includes('web-chat') }">
+                    <div class="channel-header">
+                      <div class="channel-header-content">
+                        <div class="channel-name">Web Chat</div>
+                        <div class="channel-desc">Add a chat widget to your website</div>
+                      </div>
+                      <label class="channel-toggle" @click.stop>
+                        <input type="checkbox"
+                               :checked="deploymentChannels.includes('web-chat')"
+                               @change="toggleChannel('web-chat')">
+                        <span class="channel-toggle-slider"></span>
+                      </label>
+                    </div>
+
+                    <div v-if="deploymentChannels.includes('web-chat')" class="channel-config">
+                      <div class="config-item">
+                        <label>Widget Position</label>
+                        <select class="input-field-small">
+                          <option>Bottom Right</option>
+                          <option>Bottom Left</option>
+                          <option>Top Right</option>
+                          <option>Top Left</option>
+                        </select>
+                      </div>
+                      <div class="config-item">
+                        <label>Widget Color</label>
+                        <input type="color" value="#000000" class="input-field-small">
+                      </div>
+                      <div class="config-item">
+                        <label>Greeting Message</label>
+                        <input type="text" class="input-field-small" placeholder="Hi! How can I help you?">
+                      </div>
+                    </div>
+
+                    <!-- Installation Instructions for additional Web Chat -->
+                    <div v-if="deploymentChannels.includes('web-chat')" class="deployment-subsection">
+                      <h4>Installation Instructions</h4>
+                      <p class="section-desc-small">Add this code to your website</p>
+
+                      <div class="code-block">
+                        &lt;script src="https://widget.daart.ai/v1/widget.js"&gt;&lt;/script&gt;<br>
+                        &lt;script&gt;<br>
+                        &nbsp;&nbsp;DAART.init({ agentId: "{{ selectedAgent.id }}" });<br>
+                        &lt;/script&gt;
+                      </div>
+
+                      <button class="btn-secondary">Copy Code</button>
+                    </div>
+                  </div>
+
+                  <!-- Phone / Voice (if not primary) -->
+                  <div v-if="additionalChannels.includes('phone')"
+                       class="channel-card"
+                       :class="{ enabled: deploymentChannels.includes('phone') }">
+                    <div class="channel-header">
+                      <div class="channel-header-content">
+                        <div class="channel-name">Phone / Voice</div>
+                        <div class="channel-desc">Answer incoming phone calls with AI</div>
+                      </div>
+                      <label class="channel-toggle" @click.stop>
+                        <input type="checkbox"
+                               :checked="deploymentChannels.includes('phone')"
+                               @change="toggleChannel('phone')">
+                        <span class="channel-toggle-slider"></span>
+                      </label>
+                    </div>
+
+                    <div v-if="deploymentChannels.includes('phone')" class="channel-config">
+                      <div class="config-item">
+                        <label>Phone Number</label>
+                        <select class="input-field-small">
+                          <option>+1 (555) 0123</option>
+                          <option>+1 (555) 0124</option>
+                          <option>+ Provision New Number</option>
+                        </select>
+                      </div>
+                      <div class="config-item">
+                        <label>Voice</label>
+                        <select class="input-field-small">
+                          <option>Default (Neural)</option>
+                          <option>Male (Standard)</option>
+                          <option>Female (Standard)</option>
+                        </select>
+                      </div>
+                      <div class="config-item">
+                        <label>Call Forwarding (optional)</label>
+                        <input type="tel" class="input-field-small" placeholder="+1 (555) 0000">
+                      </div>
+                    </div>
+
+                    <!-- Installation Instructions for additional Phone -->
+                    <div v-if="deploymentChannels.includes('phone')" class="deployment-subsection">
+                      <h4>Setup Instructions</h4>
+                      <p class="section-desc-small">Your agent will answer calls to the selected number</p>
+
+                      <div class="info-box">
+                        <strong>Phone Number:</strong> +1 (555) 0123<br>
+                        <strong>Status:</strong> Active<br>
+                        <strong>Routing:</strong> AI Agent → Fallback (if configured)
+                      </div>
+
+                      <button class="btn-secondary">Test Call</button>
+                    </div>
+                  </div>
+
+                  <!-- SMS / Text Channel -->
+                  <div class="channel-card" :class="{ enabled: deploymentChannels.includes('sms') }">
+                    <div class="channel-header">
+                      <div class="channel-header-content">
+                        <div class="channel-name">SMS / Text</div>
+                        <div class="channel-desc">Respond to text messages automatically</div>
+                      </div>
+                      <label class="channel-toggle" @click.stop>
+                        <input type="checkbox"
+                               :checked="deploymentChannels.includes('sms')"
+                               @change="toggleChannel('sms')">
+                        <span class="channel-toggle-slider"></span>
+                      </label>
+                    </div>
+
+                    <div v-if="deploymentChannels.includes('sms')" class="channel-config">
+                      <div class="config-item">
+                        <label>SMS Number</label>
+                        <select class="input-field-small">
+                          <option>+1 (555) 0125</option>
+                          <option>+1 (555) 0126</option>
+                          <option>+ Provision New Number</option>
+                        </select>
+                      </div>
+                      <div class="config-item">
+                        <label>Auto-Reply Message</label>
+                        <textarea class="input-field-small" rows="2" placeholder="Thanks for reaching out! I'll respond shortly."></textarea>
+                      </div>
+                      <div class="config-item">
+                        <label>Max Message Length</label>
+                        <select class="input-field-small">
+                          <option>160 characters (1 SMS)</option>
+                          <option>320 characters (2 SMS)</option>
+                          <option>480 characters (3 SMS)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <!-- Installation Instructions for SMS -->
+                    <div v-if="deploymentChannels.includes('sms')" class="deployment-subsection">
+                      <h4>Setup Instructions</h4>
+                      <p class="section-desc-small">Your agent will respond to SMS messages</p>
+
+                      <div class="info-box">
+                        <strong>SMS Number:</strong> +1 (555) 0125<br>
+                        <strong>Status:</strong> Active<br>
+                        <strong>Auto-Reply:</strong> Enabled
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Testing Panel -->
+                <div class="test-panel">
+                  <!-- Digital Testing (Chat/SMS) -->
+                  <div v-if="currentTestChannel === 'digital'" class="test-content">
+                    <div class="test-content-header">
+                      <span>Digital Agent Testing</span>
+                      <button class="btn-icon" @click="clearTestMessages">Clear</button>
+                    </div>
+                    <div class="test-chat">
+                      <div class="test-messages">
+                        <div v-for="msg in testMessages"
+                             :key="msg.id"
+                             class="test-message"
+                             :class="msg.sender">
+                          {{ msg.text }}
+                        </div>
+                        <div v-if="quickTestLoading" class="test-message agent typing">
+                          <span class="dot"></span>
+                          <span class="dot"></span>
+                          <span class="dot"></span>
+                        </div>
+
+                        <!-- Suggested Prompts (show when no messages) -->
+                        <div v-if="testMessages.length === 0 && !quickTestLoading" class="test-suggestions">
+                          <div class="suggestions-label">Try asking:</div>
+                          <div class="suggestions-chips">
+                            <button v-for="suggestion in quickTestSuggestions"
+                                    :key="suggestion"
+                                    class="suggestion-chip"
+                                    @click="sendSuggestion(suggestion)">
+                              {{ suggestion }}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="test-input">
+                        <input v-model="quickTestMsg"
+                               type="text"
+                               placeholder="Type a message to test..."
+                               @keyup.enter="sendQuickTest"
+                               :disabled="quickTestLoading"
+                               class="input-field">
+                        <button @click="sendQuickTest" :disabled="quickTestLoading" class="btn-send">
+                          {{ quickTestLoading ? 'Sending...' : 'Send' }}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Voice Testing (Phone) -->
+                  <div v-if="currentTestChannel === 'voice'" class="test-content">
+                    <div class="voice-test-panel">
+                      <div class="voice-test-status">
+                        <div class="voice-status-indicator" :class="voiceCallStatus">
+                          <div class="status-dot"></div>
+                          <span>{{ voiceCallStatusText }}</span>
+                        </div>
+                        <div class="voice-test-info">
+                          <div class="info-row">
+                            <span class="info-label">Test Number:</span>
+                            <span class="info-value">+1 (555) 0000</span>
+                          </div>
+                          <div class="info-row">
+                            <span class="info-label">Duration:</span>
+                            <span class="info-value">{{ voiceCallDuration }}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="voice-test-actions">
+                        <button v-if="voiceCallStatus === 'idle'"
+                                class="btn-voice-call"
+                                @click="startVoiceTest">
+                          Start Test Call
+                        </button>
+                        <button v-else-if="voiceCallStatus === 'connected'"
+                                class="btn-voice-end"
+                                @click="endVoiceTest">
+                          End Call
+                        </button>
+                        <div v-else-if="voiceCallStatus === 'connecting'" class="voice-connecting">
+                          <div class="loading-dots">
+                            <span class="dot"></span>
+                            <span class="dot"></span>
+                            <span class="dot"></span>
+                          </div>
+                          Connecting...
+                        </div>
+                      </div>
+
+                      <div class="voice-test-transcript">
+                        <div class="transcript-header">Live Transcript</div>
+                        <div class="transcript-messages">
+                          <div v-for="msg in voiceTranscript"
+                               :key="msg.id"
+                               class="transcript-message"
+                               :class="msg.speaker">
+                            <div class="transcript-speaker">{{ msg.speaker === 'user' ? 'You' : 'Agent' }}</div>
+                            <div class="transcript-text">{{ msg.text }}</div>
+                            <div class="transcript-time">{{ msg.timestamp }}</div>
+                          </div>
+                          <div v-if="voiceTranscript.length === 0" class="transcript-empty">
+                            Start a test call to see the transcript
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
+            <!-- MONITOR Tab -->
+            <div v-if="activeTab === 'monitor'" class="tab-panel">
+              <div class="analyze-layout">
+                <!-- Monitor Main Content -->
+                <div class="monitor-main">
+                  <div class="metrics-row">
+                  <div class="metric-card">
+                    <div class="metric-label">Total Conversations</div>
+                    <div class="metric-value">{{ conversationHistory.length }}</div>
+                  </div>
+                  <div class="metric-card">
+                    <div class="metric-label">Deflection Rate</div>
+                    <div class="metric-value">{{ selectedAgent.deflectionRate || 0 }}%</div>
+                  </div>
+                  <div class="metric-card">
+                    <div class="metric-label">Avg Response Time</div>
+                    <div class="metric-value">1.2s</div>
+                  </div>
+                  <div class="metric-card">
+                    <div class="metric-label">Customer Satisfaction</div>
+                    <div class="metric-value">{{ selectedAgent.satisfaction || '-' }}</div>
+                  </div>
+                </div>
+
+                  <!-- Conversation History Section -->
+                  <div v-if="conversationHistory.length > 0" class="conversation-history-section">
+                    <h3>Conversation History</h3>
+                    <p class="section-desc">Recent test conversations and interactions</p>
+
+                    <div class="conversations-list">
+                      <div v-for="conv in conversationHistory.slice(0, 10)"
+                           :key="conv.id"
+                           class="conversation-card">
+                        <div class="conversation-header">
+                          <div class="conversation-meta">
+                            <span class="conversation-type">{{ conv.type === 'quick-test' ? '⚡ Quick Test' : '📋 Scenario Test' }}</span>
+                            <span v-if="conv.scenario" class="conversation-scenario">{{ conv.scenario }}</span>
+                          </div>
+                          <div class="conversation-time">{{ formatTimestamp(conv.timestamp) }}</div>
+                        </div>
+                        <div class="conversation-preview">
+                          <div class="preview-message user">
+                            <strong>User:</strong> {{ conv.messages[0]?.text }}
+                          </div>
+                          <div class="preview-message agent">
+                            <strong>Agent:</strong> {{ conv.messages[1]?.text }}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div v-else class="no-data">
+                    <h3>No Test Data Yet</h3>
+                    <p>Run Quick Tests or Test Scenarios to see conversation history</p>
+                    <button class="btn-primary" @click="activeTab = 'build'">Go to BUILD</button>
+                  </div>
+                </div>
+
+                <!-- Testing Panel -->
+                <div class="test-panel">
+                  <!-- Digital Testing (Chat/SMS) -->
+                  <div v-if="currentTestChannel === 'digital'" class="test-content">
+                    <div class="test-content-header">
+                      <span>Digital Agent Testing</span>
+                      <button class="btn-icon" @click="clearTestMessages">Clear</button>
+                    </div>
+                    <div class="test-chat">
+                      <div class="test-messages">
+                        <div v-for="msg in testMessages"
+                             :key="msg.id"
+                             class="test-message"
+                             :class="msg.sender">
+                          {{ msg.text }}
+                        </div>
+                        <div v-if="quickTestLoading" class="test-message agent typing">
+                          <span class="dot"></span>
+                          <span class="dot"></span>
+                          <span class="dot"></span>
+                        </div>
+
+                        <!-- Suggested Prompts (show when no messages) -->
+                        <div v-if="testMessages.length === 0 && !quickTestLoading" class="test-suggestions">
+                          <div class="suggestions-label">Try asking:</div>
+                          <div class="suggestions-chips">
+                            <button v-for="suggestion in quickTestSuggestions"
+                                    :key="suggestion"
+                                    class="suggestion-chip"
+                                    @click="sendSuggestion(suggestion)">
+                              {{ suggestion }}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="test-input">
+                        <input v-model="quickTestMsg"
+                               type="text"
+                               placeholder="Type a message to test..."
+                               @keyup.enter="sendQuickTest"
+                               :disabled="quickTestLoading"
+                               class="input-field">
+                        <button @click="sendQuickTest" :disabled="quickTestLoading" class="btn-send">
+                          {{ quickTestLoading ? 'Sending...' : 'Send' }}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Voice Testing (Phone) -->
+                  <div v-if="currentTestChannel === 'voice'" class="test-content">
+                    <div class="voice-test-panel">
+                      <div class="voice-test-status">
+                        <div class="voice-status-indicator" :class="voiceCallStatus">
+                          <div class="status-dot"></div>
+                          <span>{{ voiceCallStatusText }}</span>
+                        </div>
+                        <div class="voice-test-info">
+                          <div class="info-row">
+                            <span class="info-label">Test Number:</span>
+                            <span class="info-value">+1 (555) 0000</span>
+                          </div>
+                          <div class="info-row">
+                            <span class="info-label">Duration:</span>
+                            <span class="info-value">{{ voiceCallDuration }}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="voice-test-actions">
+                        <button v-if="voiceCallStatus === 'idle'"
+                                class="btn-voice-call"
+                                @click="startVoiceTest">
+                          Start Test Call
+                        </button>
+                        <button v-else-if="voiceCallStatus === 'connected'"
+                                class="btn-voice-end"
+                                @click="endVoiceTest">
+                          End Call
+                        </button>
+                        <div v-else-if="voiceCallStatus === 'connecting'" class="voice-connecting">
+                          <div class="loading-dots">
+                            <span class="dot"></span>
+                            <span class="dot"></span>
+                            <span class="dot"></span>
+                          </div>
+                          Connecting...
+                        </div>
+                      </div>
+
+                      <div class="voice-test-transcript">
+                        <div class="transcript-header">Live Transcript</div>
+                        <div class="transcript-messages">
+                          <div v-for="msg in voiceTranscript"
+                               :key="msg.id"
+                               class="transcript-message"
+                               :class="msg.speaker">
+                            <div class="transcript-speaker">{{ msg.speaker === 'user' ? 'You' : 'Agent' }}</div>
+                            <div class="transcript-text">{{ msg.text }}</div>
+                            <div class="transcript-time">{{ msg.timestamp }}</div>
+                          </div>
+                          <div v-if="voiceTranscript.length === 0" class="transcript-empty">
+                            Start a test call to see the transcript
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Skills Builder Modal -->
+        <div v-if="showSkillsBuilder" class="modal-overlay" @click="closeSkillsBuilder">
+          <div class="modal-dialog" @click.stop>
+            <div class="modal-header">
+              <h2>Create New Skill</h2>
+              <button class="modal-close" @click="closeSkillsBuilder">×</button>
+            </div>
+            <div class="modal-body">
+              <div class="form-group">
+                <label>Skill Name</label>
+                <input v-model="newSkill.name" type="text" class="input-field" placeholder="e.g., Check Order Status">
+              </div>
+
+              <div class="form-group">
+                <label>Description</label>
+                <textarea v-model="newSkill.description" rows="2" class="input-field" placeholder="What does this skill do?"></textarea>
+              </div>
+
+              <div class="form-group">
+                <label>MCP Server</label>
+                <select v-model="newSkill.mcpServer" class="input-field">
+                  <option value="">No MCP connection</option>
+                  <option value="postgres">PostgreSQL Database</option>
+                  <option value="shopify">Shopify API</option>
+                  <option value="stripe">Stripe Payments</option>
+                  <option value="sendgrid">SendGrid Email</option>
+                  <option value="twilio">Twilio SMS</option>
+                </select>
+                <div class="hint">Connect to an MCP server to extend this skill's capabilities</div>
+              </div>
+
+              <div v-if="newSkill.mcpServer" class="form-group">
+                <label>Parameters</label>
+                <textarea v-model="newSkill.parameters" rows="3" class="input-field" placeholder='{"api_key": "...", "endpoint": "..."}'></textarea>
+                <div class="hint">JSON configuration for the MCP server connection</div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn-secondary" @click="closeSkillsBuilder">Cancel</button>
+              <button class="btn-primary" @click="createSkill">Create Skill</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Test Builder Modal -->
+        <div v-if="showTestBuilder" class="modal-overlay" @click="closeTestBuilder">
+          <div class="modal-dialog" @click.stop>
+            <div class="modal-header">
+              <h2>Create Test Scenario</h2>
+              <button class="modal-close" @click="closeTestBuilder">×</button>
+            </div>
+            <div class="modal-body">
+              <div class="form-group">
+                <label>Test Name</label>
+                <input v-model="newTest.name" type="text" class="input-field" placeholder="e.g., Check Business Hours">
+              </div>
+
+              <div class="form-group">
+                <label>Test Prompt</label>
+                <textarea v-model="newTest.prompt" rows="2" class="input-field" placeholder="What should the user ask?"></textarea>
+                <div class="hint">This is the question or message that will be sent to the agent</div>
+              </div>
+
+              <div class="form-group">
+                <label>Expected Keywords</label>
+                <input v-model="newTest.keywords" type="text" class="input-field" placeholder="e.g., hours, open, Monday">
+                <div class="hint">Comma-separated keywords that should appear in the response</div>
+              </div>
+
+              <div class="form-group">
+                <label>Pass Criteria</label>
+                <select v-model="newTest.passCriteria" class="input-field">
+                  <option value="contains-all">Contains all keywords</option>
+                  <option value="contains-any">Contains any keyword</option>
+                  <option value="response-time">Response time &lt; 2s</option>
+                </select>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn-secondary" @click="closeTestBuilder">Cancel</button>
+              <button class="btn-primary" @click="createTest">Create Test</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Skill Test Modal -->
+  <div v-if="skillTestModalOpen" class="modal-overlay" @click="closeSkillTestModal">
+    <div class="modal-content skill-test-modal" @click.stop>
+      <div class="modal-header">
+        <h3>Test Skill: {{ skillBeingTested?.name }}</h3>
+        <button class="modal-close" @click="closeSkillTestModal">×</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="playground-input-section">
+          <label>Test Input / Mock Data</label>
+          <textarea v-model="skillTestInput"
+                    class="input-field"
+                    placeholder='Enter test data (e.g., {"orderId": "12345"})'
+                    rows="6"></textarea>
+        </div>
+
+        <button class="btn-primary"
+                @click="runSkillTest"
+                :disabled="runningSkillTest">
+          {{ runningSkillTest ? 'Testing Skill...' : 'Run Test' }}
+        </button>
+
+        <div v-if="skillTestResult" class="playground-result-section">
+          <div class="result-header">
+            <span>Result</span>
+            <span class="result-status" :class="skillTestResult.status">
+              {{ skillTestResult.status }}
+            </span>
+          </div>
+          <div class="result-content">
+            {{ skillTestResult.output }}
+          </div>
+          <div v-if="skillTestResult.logs" class="result-logs">
+            <div class="logs-header">Execution Logs</div>
+            <div class="logs-content">
+              <div v-for="(log, idx) in skillTestResult.logs" :key="idx" class="log-entry">
+                {{ log }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+// Usage Tracking
+const usageData = ref({
+  callsUsed: 0,
+  callsLimit: 100,
+  resetDate: null
+})
+
+function loadUsageData() {
+  const saved = localStorage.getItem('daart-usage')
+  if (saved) {
+    usageData.value = JSON.parse(saved)
+  } else {
+    // Initialize with default values
+    const resetDate = new Date()
+    resetDate.setDate(resetDate.getDate() + 14) // 14-day trial
+    usageData.value = {
+      callsUsed: 0,
+      callsLimit: 100,
+      resetDate: resetDate.toISOString()
+    }
+    localStorage.setItem('daart-usage', JSON.stringify(usageData.value))
+  }
+}
+
+function incrementUsage() {
+  usageData.value.callsUsed++
+  localStorage.setItem('daart-usage', JSON.stringify(usageData.value))
+}
+
+const usagePercentage = computed(() => {
+  return Math.round((usageData.value.callsUsed / usageData.value.callsLimit) * 100)
+})
+
+const usageColor = computed(() => {
+  const pct = usagePercentage.value
+  if (pct < 70) return 'green'
+  if (pct < 90) return 'yellow'
+  return 'red'
+})
+
+// Load agents from localStorage
+const agents = ref([])
+
+// Selected agent
+const selectedAgentId = ref(null)
+const showAgentDropdown = ref(false)
+
+const selectedAgent = computed(() => {
+  return agents.value.find(a => a.id === selectedAgentId.value)
+})
+
+function selectAgent(agentId) {
+  selectedAgentId.value = agentId
+
+  // Initialize deployment channels from agent data
+  const agent = agents.value.find(a => a.id === agentId)
+  if (agent && agent.channels) {
+    deploymentChannels.value = [...agent.channels]
+  } else if (agent && agent.channel) {
+    deploymentChannels.value = [agent.channel]
+  }
+
+  // Reset test messages when switching agents
+  testMessages.value = []
+  scenarioResults.value = {}
+}
+
+function toggleAgentDropdown() {
+  showAgentDropdown.value = !showAgentDropdown.value
+}
+
+function selectAgentFromDropdown(agentId) {
+  selectAgent(agentId)
+  showAgentDropdown.value = false
+}
+
+function createNewAgentFromDropdown() {
+  showAgentDropdown.value = false
+  createNewAgent()
+}
+
+// Close dropdown when clicking outside
+function handleClickOutside(event) {
+  if (showAgentDropdown.value) {
+    const dropdown = document.querySelector('.agent-selector')
+    if (dropdown && !dropdown.contains(event.target)) {
+      showAgentDropdown.value = false
+    }
+  }
+}
+
+onMounted(() => {
+  loadUsageData()
+
+  const saved = localStorage.getItem('daart-agents')
+  if (saved) {
+    agents.value = JSON.parse(saved)
+
+    // Select first agent by default
+    if (agents.value.length > 0) {
+      selectAgent(agents.value[0].id)
+    }
+  }
+
+  // Load last viewed timestamps for monitor
+  const viewedSaved = localStorage.getItem('daart-monitor-viewed')
+  if (viewedSaved) {
+    lastViewedTimestamps.value = JSON.parse(viewedSaved)
+  }
+
+  // Add click outside listener
+  document.addEventListener('click', handleClickOutside)
+})
+
+// Clean up listener
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
+
+function channelLabel(channel) {
+  const labels = {
+    'web-chat': 'Web Chat',
+    'phone': 'Phone',
+    'sms': 'SMS'
+  }
+  return labels[channel] || channel
+}
+
+// Tabs
+const tabs = [
+  { id: 'build', label: 'BUILD' },
+  { id: 'test', label: 'TEST' },
+  { id: 'deploy', label: 'DEPLOY' },
+  { id: 'monitor', label: 'MONITOR' }
+]
+
+const activeTab = ref('build')
+
+function handleTabClick(tabId) {
+  activeTab.value = tabId
+
+  // Mark monitor as viewed when clicking on monitor tab
+  if (tabId === 'monitor') {
+    markMonitorAsViewed()
+  }
+}
+
+// BUILD tab section navigation
+const buildSections = [
+  { id: 'configuration', label: 'Configuration' },
+  { id: 'knowledge', label: 'Knowledge Base' },
+  { id: 'skills', label: 'Skills' },
+  { id: 'flow', label: 'Conversation Flow' }
+]
+
+const activeBuildSection = ref('configuration')
+
+// Notification system
+const notification = ref(null)
+const saving = ref(false)
+const validating = ref(false)
+
+function showNotification(message, type = 'success') {
+  notification.value = { message, type }
+  setTimeout(() => {
+    notification.value = null
+  }, 3000)
+}
+
+// COMPASS Validation
+const validationExpanded = ref(true)
+
+const validationMessages = computed(() => {
+  if (!selectedAgent.value) return []
+
+  const messages = []
+  const agent = selectedAgent.value
+
+  // Validate Agent Name
+  if (!agent.name || agent.name.trim().length === 0) {
+    messages.push({
+      id: 'name-empty',
+      severity: 'error',
+      field: 'Agent Name',
+      message: 'Agent name is required'
+    })
+  } else if (agent.name.length < 3) {
+    messages.push({
+      id: 'name-short',
+      severity: 'warning',
+      field: 'Agent Name',
+      message: 'Agent name should be at least 3 characters long'
+    })
+  }
+
+  // Validate Description
+  if (!agent.description || agent.description.trim().length === 0) {
+    messages.push({
+      id: 'desc-empty',
+      severity: 'warning',
+      field: 'Description',
+      message: 'Adding a description helps you remember what this agent does'
+    })
+  }
+
+  // Validate Instructions
+  if (!agent.instructions || agent.instructions.trim().length === 0) {
+    messages.push({
+      id: 'instructions-empty',
+      severity: 'error',
+      field: 'Behavior Instructions',
+      message: 'Instructions are required to guide agent behavior'
+    })
+  } else if (agent.instructions.length < 50) {
+    messages.push({
+      id: 'instructions-short',
+      severity: 'warning',
+      field: 'Behavior Instructions',
+      message: 'More detailed instructions (50+ characters) lead to better agent performance'
+    })
+  }
+
+  // Validate Knowledge Base
+  if (!agent.knowledge || agent.knowledge.length === 0) {
+    messages.push({
+      id: 'knowledge-empty',
+      severity: 'warning',
+      field: 'Knowledge Base',
+      message: 'No knowledge sources configured. Agent may not have enough context to answer questions.'
+    })
+  }
+
+  // Validate Skills
+  if (!agent.skills || agent.skills.length === 0) {
+    messages.push({
+      id: 'skills-empty',
+      severity: 'info',
+      field: 'Skills',
+      message: 'No skills configured. Consider adding skills to extend agent capabilities.'
+    })
+  } else {
+    const enabledSkills = agent.skills.filter(s => s.enabled)
+    if (enabledSkills.length === 0) {
+      messages.push({
+        id: 'skills-disabled',
+        severity: 'warning',
+        field: 'Skills',
+        message: 'All skills are disabled. Enable at least one skill for the agent to use them.'
+      })
+    }
+  }
+
+  // Validate Channels
+  if (!agent.channels || agent.channels.length === 0) {
+    messages.push({
+      id: 'channels-empty',
+      severity: 'info',
+      field: 'Channels',
+      message: 'No channels configured. Visit Channels section in BUILD to make your agent available.'
+    })
+  }
+
+  return messages
+})
+
+// Testing Panel - Smart Contextual Channel based on agent type
+const currentTestChannel = computed(() => {
+  if (!selectedAgent.value) return 'digital'
+
+  // Use agent type as primary determinant
+  const agentType = selectedAgent.value.agentType
+  if (agentType === 'phone') return 'voice'
+  if (agentType === 'chat') return 'digital'
+
+  // Fallback for legacy agents without agentType - check channels
+  const channels = deploymentChannels.value || []
+  if (channels.includes('phone') && !channels.includes('web-chat')) {
+    return 'voice'
+  }
+
+  return 'digital'
+})
+
+// Channel Detection (for UI indicators)
+const hasDigitalChannels = computed(() => {
+  if (!selectedAgent.value) return true
+  const channels = deploymentChannels.value || []
+  return channels.includes('web-chat') || channels.includes('sms') || channels.length === 0
+})
+
+const hasVoiceChannels = computed(() => {
+  if (!selectedAgent.value) return false
+  const channels = deploymentChannels.value || []
+  return channels.includes('phone')
+})
+
+// Note: Toggle button removed since test channel now auto-determined by agent type
+// Button only shows for legacy agents with both channel types enabled
+
+// Try-Now Digital (Chat Testing)
+const testMessages = ref([])
+const quickTestMsg = ref('')
+const quickTestLoading = ref(false)
+
+// Context-aware test suggestions
+const quickTestSuggestions = computed(() => {
+  if (!selectedAgent.value) return []
+
+  const agent = selectedAgent.value
+  const suggestions = []
+
+  // Always include: What can you help with?
+  suggestions.push("What can you help with?")
+
+  // Add based on knowledge base
+  if (agent.knowledge && agent.knowledge.length > 0) {
+    suggestions.push("Tell me about your services")
+  }
+
+  // Add based on skills
+  if (agent.skills && agent.skills.filter(s => s.enabled).length > 0) {
+    const firstSkill = agent.skills.find(s => s.enabled)
+    if (firstSkill && firstSkill.name.toLowerCase().includes('order')) {
+      suggestions.push("Check my order status")
+    } else {
+      suggestions.push("What actions can you perform?")
+    }
+  }
+
+  // Add channel-specific suggestions
+  if (agent.channels && agent.channels.includes('phone')) {
+    suggestions.push("What are your hours?")
+  }
+
+  // Always include: How does this work?
+  if (suggestions.length < 5) {
+    suggestions.push("How does this work?")
+  }
+
+  // Fallback suggestions if nothing is configured
+  if (suggestions.length < 3) {
+    suggestions.push("Hello!")
+    suggestions.push("Can you help me?")
+  }
+
+  return suggestions.slice(0, 5)
+})
+
+function clearTestMessages() {
+  testMessages.value = []
+}
+
+// Try-Now Voice (Call Simulation)
+const voiceCallStatus = ref('idle') // idle, connecting, connected, ended
+const voiceCallDuration = ref('00:00')
+const voiceTranscript = ref([])
+let voiceCallTimer = null
+let voiceCallSeconds = 0
+
+const voiceCallStatusText = computed(() => {
+  switch (voiceCallStatus.value) {
+    case 'idle': return 'Ready to Test'
+    case 'connecting': return 'Connecting...'
+    case 'connected': return 'Call Active'
+    case 'ended': return 'Call Ended'
+    default: return 'Ready'
+  }
+})
+
+function startVoiceTest() {
+  voiceCallStatus.value = 'connecting'
+  voiceCallSeconds = 0
+  voiceCallDuration.value = '00:00'
+  voiceTranscript.value = []
+
+  // Simulate connection
+  setTimeout(() => {
+    voiceCallStatus.value = 'connected'
+    startVoiceTimer()
+    simulateVoiceConversation()
+  }, 2000)
+}
+
+function endVoiceTest() {
+  voiceCallStatus.value = 'ended'
+  if (voiceCallTimer) {
+    clearInterval(voiceCallTimer)
+    voiceCallTimer = null
+  }
+
+  // Save conversation to Monitor if there are messages
+  if (voiceTranscript.value.length > 0) {
+    const messages = voiceTranscript.value.map(t => ({
+      id: t.id,
+      sender: t.speaker, // Convert 'speaker' to 'sender'
+      text: t.text
+    }))
+    saveConversation('voice-test', messages)
+  }
+
+  // Reset to idle after 2 seconds
+  setTimeout(() => {
+    voiceCallStatus.value = 'idle'
+  }, 2000)
+}
+
+function startVoiceTimer() {
+  voiceCallTimer = setInterval(() => {
+    voiceCallSeconds++
+    const mins = Math.floor(voiceCallSeconds / 60)
+    const secs = voiceCallSeconds % 60
+    voiceCallDuration.value = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+  }, 1000)
+}
+
+function simulateVoiceConversation() {
+  // Simulate initial greeting
+  setTimeout(() => {
+    voiceTranscript.value.push({
+      id: Date.now(),
+      speaker: 'agent',
+      text: `Hello! I'm ${selectedAgent.value?.name || 'your AI agent'}. How can I help you today?`,
+      timestamp: new Date().toLocaleTimeString()
+    })
+  }, 500)
+
+  // Simulate user speaking
+  setTimeout(() => {
+    voiceTranscript.value.push({
+      id: Date.now(),
+      speaker: 'user',
+      text: "What are your business hours?",
+      timestamp: new Date().toLocaleTimeString()
+    })
+  }, 3000)
+
+  // Simulate agent response
+  setTimeout(() => {
+    voiceTranscript.value.push({
+      id: Date.now(),
+      speaker: 'agent',
+      text: "We're open Monday through Friday, 9 AM to 5 PM Eastern Time. Is there anything else I can help you with?",
+      timestamp: new Date().toLocaleTimeString()
+    })
+  }, 5000)
+}
+
+// Skills Testing (Contextual Modal)
+const skillTestModalOpen = ref(false)
+const skillBeingTested = ref(null)
+const skillTestInput = ref('')
+const skillTestResult = ref(null)
+const runningSkillTest = ref(false)
+
+function openSkillTest(skill) {
+  skillBeingTested.value = skill
+  skillTestInput.value = ''
+  skillTestResult.value = null
+  skillTestModalOpen.value = true
+}
+
+function closeSkillTestModal() {
+  skillTestModalOpen.value = false
+  skillBeingTested.value = null
+  skillTestInput.value = ''
+  skillTestResult.value = null
+}
+
+function runSkillTest() {
+  if (!skillBeingTested.value) return
+
+  runningSkillTest.value = true
+  skillTestResult.value = null
+
+  // Simulate skill execution
+  setTimeout(() => {
+    skillTestResult.value = {
+      status: 'success',
+      output: `Skill "${skillBeingTested.value.name}" executed successfully with test input.`,
+      logs: [
+        '[00:00.123] Skill execution started',
+        '[00:00.245] Validating input parameters',
+        '[00:00.367] Connecting to external service',
+        '[00:00.489] Processing request',
+        '[00:00.612] Response received',
+        '[00:00.734] Skill execution completed'
+      ]
+    }
+
+    runningSkillTest.value = false
+  }, 2000)
+}
+
+function sendSuggestion(suggestion) {
+  quickTestMsg.value = suggestion
+  sendQuickTest()
+}
+
+function sendQuickTest() {
+  if (!quickTestMsg.value.trim()) return
+
+  quickTestLoading.value = true
+
+  const userMessage = {
+    id: Date.now(),
+    sender: 'user',
+    text: quickTestMsg.value
+  }
+
+  testMessages.value.push(userMessage)
+
+  const msg = quickTestMsg.value
+  quickTestMsg.value = ''
+
+  setTimeout(() => {
+    const agentMessage = {
+      id: Date.now() + 1,
+      sender: 'agent',
+      text: `I can help with that. Based on my knowledge base, ${msg.toLowerCase()}.`
+    }
+    testMessages.value.push(agentMessage)
+    quickTestLoading.value = false
+
+    // Increment usage
+    incrementUsage()
+
+    // Save conversation to history
+    saveConversation('quick-test', [userMessage, agentMessage])
+  }, 1000)
+}
+
+// Conversation History
+const conversationUpdateTrigger = ref(0) // Reactive trigger for localStorage changes
+
+function saveConversation(type, messages, scenarioName = null) {
+  if (!selectedAgent.value) return
+
+  const conversation = {
+    id: `conv-${Date.now()}`,
+    agentId: selectedAgent.value.id,
+    agentName: selectedAgent.value.name,
+    timestamp: new Date().toISOString(),
+    type: type, // 'quick-test' or 'scenario-test'
+    messages: messages,
+    scenario: scenarioName
+  }
+
+  // Load existing conversations
+  const saved = localStorage.getItem('daart-conversations')
+  const conversations = saved ? JSON.parse(saved) : []
+
+  // Add new conversation
+  conversations.push(conversation)
+
+  // Keep only last 100 conversations
+  if (conversations.length > 100) {
+    conversations.splice(0, conversations.length - 100)
+  }
+
+  // Save back to localStorage
+  localStorage.setItem('daart-conversations', JSON.stringify(conversations))
+
+  // Trigger reactive update
+  conversationUpdateTrigger.value++
+}
+
+const conversationHistory = computed(() => {
+  // Add dependency on trigger so computed re-runs when conversations change
+  conversationUpdateTrigger.value
+  const saved = localStorage.getItem('daart-conversations')
+  if (!saved) return []
+
+  const conversations = JSON.parse(saved)
+
+  // Filter by selected agent
+  if (selectedAgent.value) {
+    return conversations.filter(c => c.agentId === selectedAgent.value.id).reverse()
+  }
+
+  return conversations.reverse()
+})
+
+// Unread conversation tracking
+const lastViewedTimestamps = ref({}) // Track last viewed time per agent
+
+// Count unread conversations for current agent
+const unreadConversationCount = computed(() => {
+  conversationUpdateTrigger.value // Re-run when conversations change
+
+  if (!selectedAgent.value) return 0
+
+  const agentId = selectedAgent.value.id
+  const lastViewed = lastViewedTimestamps.value[agentId] || 0
+
+  // Count conversations newer than last viewed time
+  const conversations = conversationHistory.value
+  return conversations.filter(c => {
+    const conversationTime = new Date(c.timestamp).getTime()
+    return conversationTime > lastViewed
+  }).length
+})
+
+// Mark Monitor as viewed
+function markMonitorAsViewed() {
+  if (!selectedAgent.value) return
+
+  const agentId = selectedAgent.value.id
+  lastViewedTimestamps.value[agentId] = Date.now()
+  localStorage.setItem('daart-monitor-viewed', JSON.stringify(lastViewedTimestamps.value))
+  conversationUpdateTrigger.value++ // Force re-computation of unread count
+}
+
+// Test Scenarios
+const scenarioResults = ref({})
+const runningTests = ref({})
+const runningAllTests = ref(false)
+
+function runScenario(scenario) {
+  runningTests.value[scenario.id] = true
+  setTimeout(() => {
+    const response = `Great question! ${scenario.expectedKeywords.join(' and ')}.`
+    scenarioResults.value[scenario.id] = response
+    runningTests.value[scenario.id] = false
+
+    // Increment usage
+    incrementUsage()
+
+    // Save scenario test to conversation history
+    const userMessage = {
+      id: Date.now(),
+      sender: 'user',
+      text: scenario.prompt
+    }
+    const agentMessage = {
+      id: Date.now() + 1,
+      sender: 'agent',
+      text: response
+    }
+    saveConversation('scenario-test', [userMessage, agentMessage], scenario.name)
+  }, 1000)
+}
+
+function runAllTests() {
+  if (!selectedAgent.value.testScenarios) return
+
+  runningAllTests.value = true
+  selectedAgent.value.testScenarios.forEach((scenario, index) => {
+    runningTests.value[scenario.id] = true
+    setTimeout(() => {
+      scenarioResults.value[scenario.id] = `Great question! ${scenario.expectedKeywords.join(' and ')}.`
+      runningTests.value[scenario.id] = false
+
+      // Check if all tests are complete
+      const allComplete = selectedAgent.value.testScenarios.every(s => scenarioResults.value[s.id])
+      if (allComplete) {
+        runningAllTests.value = false
+        showNotification('All tests completed successfully!')
+      }
+    }, 1000 + (index * 500))
+  })
+}
+
+// Deployment
+const deploymentChannels = ref([])
+
+// Determine primary channel based on agent type
+const primaryChannel = computed(() => {
+  if (!selectedAgent.value) return 'web-chat'
+
+  const agentType = selectedAgent.value.agentType
+  if (agentType === 'phone') return 'phone'
+  if (agentType === 'chat') return 'web-chat'
+
+  // Fallback to channel if agentType not set (legacy agents)
+  return selectedAgent.value.channel || 'web-chat'
+})
+
+// Get additional channels (all except primary)
+const additionalChannels = computed(() => {
+  const primary = primaryChannel.value
+  const allChannels = ['web-chat', 'phone', 'sms']
+  return allChannels.filter(ch => ch !== primary)
+})
+
+function toggleChannel(channel) {
+  const index = deploymentChannels.value.indexOf(channel)
+  if (index > -1) {
+    deploymentChannels.value.splice(index, 1)
+  } else {
+    deploymentChannels.value.push(channel)
+  }
+
+  // Update agent's channels
+  if (selectedAgent.value) {
+    selectedAgent.value.channels = [...deploymentChannels.value]
+    saveAgents()
+  }
+}
+
+function goLive() {
+  if (!selectedAgent.value) return
+  selectedAgent.value.status = 'live'
+  selectedAgent.value.statusText = 'Live'
+  selectedAgent.value.lastUpdated = 'Just now'
+  saveAgents()
+  showNotification('Agent is now live! 🎉')
+}
+
+function pause() {
+  if (!selectedAgent.value) return
+  selectedAgent.value.status = 'paused'
+  selectedAgent.value.statusText = 'Paused'
+  selectedAgent.value.lastUpdated = 'Just now'
+  saveAgents()
+  showNotification('Agent has been paused')
+}
+
+// Actions
+function createNewAgent() {
+  router.push('/onboarding-wizard')
+}
+
+function saveAgent() {
+  saving.value = true
+  setTimeout(() => {
+    if (selectedAgent.value) {
+      selectedAgent.value.lastUpdated = 'Just now'
+    }
+    saveAgents()
+    saving.value = false
+    showNotification('Agent saved successfully!')
+  }, 500)
+}
+
+function validateAgent() {
+  validating.value = true
+  setTimeout(() => {
+    validating.value = false
+    showNotification('Validation passed! Your agent is ready to deploy.')
+  }, 1000)
+}
+
+function saveAgents() {
+  localStorage.setItem('daart-agents', JSON.stringify(agents.value))
+}
+
+function goTo(path) {
+  router.push(path)
+}
+
+// Profile Dropdown
+const showProfileMenu = ref(false)
+
+function toggleProfileMenu() {
+  showProfileMenu.value = !showProfileMenu.value
+}
+
+function signOut() {
+  // Clear localStorage
+  localStorage.removeItem('daart-agents')
+  localStorage.removeItem('daart-conversations')
+  localStorage.removeItem('daart-onboarding-complete')
+  // Redirect to signup
+  router.push('/signup')
+}
+
+// Skills Builder Modal
+const showSkillsBuilder = ref(false)
+const newSkill = ref({
+  name: '',
+  description: '',
+  mcpServer: '',
+  parameters: ''
+})
+
+function openSkillsBuilder() {
+  showSkillsBuilder.value = true
+  newSkill.value = {
+    name: '',
+    description: '',
+    mcpServer: '',
+    parameters: ''
+  }
+}
+
+function closeSkillsBuilder() {
+  showSkillsBuilder.value = false
+}
+
+function createSkill() {
+  if (!selectedAgent.value) return
+  if (!newSkill.value.name.trim()) {
+    showNotification('Skill name is required', 'error')
+    return
+  }
+
+  const skill = {
+    id: `skill-${Date.now()}`,
+    name: newSkill.value.name,
+    description: newSkill.value.description,
+    enabled: true,
+    mcpServer: newSkill.value.mcpServer || null,
+    parameters: newSkill.value.parameters || null
+  }
+
+  if (!selectedAgent.value.skills) {
+    selectedAgent.value.skills = []
+  }
+
+  selectedAgent.value.skills.push(skill)
+  saveAgents()
+  closeSkillsBuilder()
+  showNotification(`Skill "${skill.name}" created successfully!`)
+}
+
+// Test Builder Modal
+const showTestBuilder = ref(false)
+const newTest = ref({
+  name: '',
+  prompt: '',
+  keywords: '',
+  passCriteria: 'contains-all'
+})
+
+function openTestBuilder() {
+  showTestBuilder.value = true
+  newTest.value = {
+    name: '',
+    prompt: '',
+    keywords: '',
+    passCriteria: 'contains-all'
+  }
+}
+
+function closeTestBuilder() {
+  showTestBuilder.value = false
+}
+
+function createTest() {
+  if (!selectedAgent.value) return
+  if (!newTest.value.name.trim()) {
+    showNotification('Test name is required', 'error')
+    return
+  }
+  if (!newTest.value.prompt.trim()) {
+    showNotification('Test prompt is required', 'error')
+    return
+  }
+
+  const keywordsArray = newTest.value.keywords.split(',').map(k => k.trim()).filter(k => k.length > 0)
+
+  const test = {
+    id: `test-${Date.now()}`,
+    name: newTest.value.name,
+    prompt: newTest.value.prompt,
+    expectedKeywords: keywordsArray,
+    passCriteria: newTest.value.passCriteria
+  }
+
+  if (!selectedAgent.value.testScenarios) {
+    selectedAgent.value.testScenarios = []
+  }
+
+  selectedAgent.value.testScenarios.push(test)
+  saveAgents()
+  closeTestBuilder()
+  showNotification(`Test "${test.name}" created successfully!`)
+}
+
+function formatTimestamp(timestamp) {
+  const date = new Date(timestamp)
+  const now = new Date()
+  const diff = now - date
+
+  // Less than 1 minute
+  if (diff < 60000) {
+    return 'Just now'
+  }
+
+  // Less than 1 hour
+  if (diff < 3600000) {
+    const minutes = Math.floor(diff / 60000)
+    return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`
+  }
+
+  // Less than 24 hours
+  if (diff < 86400000) {
+    const hours = Math.floor(diff / 3600000)
+    return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`
+  }
+
+  // More than 24 hours
+  return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+</script>
+
+<style scoped>
+.workspace-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Top Navigation */
+.top-nav {
+  height: 50px;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  background: #fafafa;
+}
+
+.nav-left {
+  flex: 1;
+}
+
+.app-title {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.nav-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.nav-tab {
+  padding: 0 20px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  color: #666;
+  border-bottom: 2px solid transparent;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  margin-bottom: -1px;
+}
+
+.nav-tab:hover {
+  color: #000;
+  background: #f0f0f0;
+}
+
+.nav-tab.active {
+  color: #000;
+  border-bottom-color: #000;
+  font-weight: 600;
+}
+
+.nav-right {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 20px;
+}
+
+.usage-meter {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.usage-text {
+  font-size: 11px;
+  color: #666;
+  font-weight: 500;
+}
+
+.usage-bar {
+  width: 120px;
+  height: 6px;
+  background: #e0e0e0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.usage-fill {
+  height: 100%;
+  transition: width 0.3s ease, background-color 0.3s ease;
+  border-radius: 3px;
+}
+
+.usage-fill.green {
+  background: #34a853;
+}
+
+.usage-fill.yellow {
+  background: #ff8800;
+}
+
+.usage-fill.red {
+  background: #ea4335;
+}
+
+.user-info {
+  font-size: 12px;
+  color: #666;
+}
+
+/* Profile Dropdown */
+.profile-dropdown {
+  position: relative;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.profile-dropdown:hover {
+  background: #f5f5f5;
+}
+
+.profile-email {
+  font-size: 12px;
+  color: #666;
+}
+
+.dropdown-arrow {
+  font-size: 10px;
+  color: #999;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  min-width: 180px;
+  z-index: 1000;
+}
+
+.dropdown-item {
+  width: 100%;
+  padding: 12px 16px;
+  text-align: left;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 13px;
+  color: #333;
+  transition: background 0.2s;
+}
+
+.dropdown-item:first-child {
+  border-radius: 4px 4px 0 0;
+}
+
+.dropdown-item:last-child {
+  border-radius: 0 0 4px 4px;
+}
+
+.dropdown-item:hover {
+  background: #f5f5f5;
+}
+
+/* Main Layout */
+.main-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Content Area */
+.content-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.no-selection {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.no-selection-content {
+  text-align: center;
+}
+
+.no-selection-content h2 {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.no-selection-content p {
+  color: #666;
+  margin-bottom: 24px;
+}
+
+/* Agent Workspace */
+.agent-workspace {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.workspace-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.workspace-header-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+/* Agent Selector Dropdown */
+.agent-selector-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.agent-selector-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #666;
+}
+
+.agent-selector {
+  position: relative;
+  cursor: pointer;
+}
+
+.agent-selector-current {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 1px solid #ccc;
+  background: #fff;
+  border-radius: 6px;
+  min-width: 200px;
+  transition: all 0.15s;
+}
+
+.agent-selector-current:hover {
+  border-color: #999;
+  background: #fafafa;
+}
+
+.agent-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ccc;
+}
+
+.agent-status-dot.live {
+  background: #00aa00;
+}
+
+.agent-status-dot.draft {
+  background: #666;
+}
+
+.agent-status-dot.paused {
+  background: #ff8800;
+}
+
+.agent-selector-name {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+  color: #000;
+}
+
+.agent-selector-arrow {
+  font-size: 10px;
+  color: #999;
+}
+
+/* Dropdown Menu */
+.agent-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  min-width: 280px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.agent-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.agent-dropdown-item:hover {
+  background: #f5f5f5;
+}
+
+.agent-dropdown-item.active {
+  background: #f0f0f0;
+}
+
+.agent-dropdown-info {
+  flex: 1;
+}
+
+.agent-dropdown-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #000;
+  margin-bottom: 2px;
+}
+
+.agent-dropdown-meta {
+  font-size: 12px;
+  color: #666;
+}
+
+.agent-dropdown-divider {
+  height: 1px;
+  background: #eee;
+  margin: 4px 0;
+}
+
+.agent-dropdown-item.new-agent {
+  color: #000;
+  font-weight: 500;
+}
+
+.new-agent-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #000;
+}
+
+.agent-meta {
+  font-size: 13px;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.meta-status {
+  font-weight: 600;
+}
+
+.meta-status.live {
+  color: #00aa00;
+}
+
+.meta-status.draft {
+  color: #666;
+}
+
+.meta-status.paused {
+  color: #ff8800;
+}
+
+.meta-separator {
+  color: #ccc;
+}
+
+.workspace-header-right {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 8px 20px;
+  border: 1px solid #000;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.btn-primary {
+  background: #000;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: #333;
+}
+
+.btn-secondary {
+  background: #fff;
+  color: #000;
+}
+
+.btn-secondary:hover {
+  background: #f5f5f5;
+}
+
+.btn-primary:disabled,
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Notification */
+.notification {
+  padding: 12px 20px;
+  margin: 16px 0;
+  border-radius: 4px;
+  font-size: 14px;
+  animation: slideIn 0.3s ease;
+}
+
+.notification.success {
+  background: #e6f4ea;
+  border: 1px solid #34a853;
+  color: #137333;
+}
+
+.notification.error {
+  background: #fce8e6;
+  border: 1px solid #ea4335;
+  color: #c5221f;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Workspace Tabs */
+.workspace-tabs {
+  display: flex;
+  border-bottom: 1px solid #ddd;
+  background: #fafafa;
+}
+
+.workspace-tab {
+  padding: 12px 24px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: #666;
+  border-bottom: 2px solid transparent;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.workspace-tab:hover {
+  color: #000;
+  background: #f0f0f0;
+}
+
+.workspace-tab.active {
+  color: #000;
+  background: #fff;
+  border-bottom-color: #000;
+  font-weight: 600;
+}
+
+.tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: #000;
+  color: white;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* Tab Content */
+.tab-content-area {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.tab-panel {
+  padding: 24px;
+  height: 100%;
+}
+
+.tab-panel:has(.build-layout) {
+  padding: 0;
+}
+
+.tab-panel:has(.deploy-layout) {
+  padding: 0;
+}
+
+.tab-panel:has(.analyze-layout) {
+  padding: 0;
+}
+
+/* BUILD Tab */
+.build-layout {
+  display: grid;
+  grid-template-columns: 200px 1fr 350px;
+  gap: 0;
+  height: 100%;
+}
+
+/* DEPLOY Tab */
+.deploy-layout {
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 0;
+  height: 100%;
+}
+
+.deploy-main {
+  padding: 24px;
+  overflow-y: auto;
+  border-right: 1px solid #ddd;
+}
+
+.deploy-main h2 {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.deploy-main > .section-desc {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 32px;
+}
+
+/* MONITOR Tab */
+.analyze-layout {
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 0;
+  height: 100%;
+}
+
+.monitor-main {
+  padding: 24px;
+  overflow-y: auto;
+  border-right: 1px solid #ddd;
+}
+
+.info-box {
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 16px;
+  font-size: 13px;
+  line-height: 1.8;
+  color: #333;
+  margin-bottom: 16px;
+}
+
+/* Build Section Navigator */
+.build-sections-nav {
+  border-right: 1px solid #ddd;
+  background: #fafafa;
+  padding: 16px 0;
+}
+
+.section-nav-item {
+  padding: 10px 16px;
+  font-size: 13px;
+  color: #333;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-left: 3px solid transparent;
+}
+
+.section-nav-item:hover {
+  background: #f0f0f0;
+}
+
+.section-nav-item.active {
+  background: #fff;
+  color: #000;
+  font-weight: 600;
+  border-left-color: #000;
+}
+
+.build-main {
+  padding: 24px;
+  overflow-y: auto;
+  border-right: 1px solid #ddd;
+}
+
+.config-section {
+  margin-bottom: 32px;
+}
+
+.config-section h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.input-field {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: #000;
+}
+
+textarea.input-field {
+  resize: vertical;
+}
+
+.hint {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+}
+
+.section-desc-small {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.deployment-subsection {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #ddd;
+}
+
+.deployment-subsection h4 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.knowledge-upload {
+  border: 1px solid #ddd;
+  background: #fafafa;
+}
+
+.upload-area {
+  padding: 32px;
+  text-align: center;
+  border-bottom: 1px solid #ddd;
+}
+
+.upload-area p {
+  color: #666;
+  margin-bottom: 16px;
+}
+
+.knowledge-list {
+  padding: 16px;
+}
+
+.knowledge-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid #ddd;
+  background: #fff;
+  margin-bottom: 8px;
+}
+
+.knowledge-name {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.knowledge-details {
+  font-size: 12px;
+  color: #666;
+}
+
+.knowledge-status {
+  font-size: 12px;
+  color: #00aa00;
+}
+
+.knowledge-empty {
+  text-align: center;
+  padding: 24px;
+  color: #666;
+}
+
+.skills-list {
+  border: 1px solid #ddd;
+  background: #fafafa;
+  padding: 16px;
+}
+
+.skill-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid #ddd;
+  background: #fff;
+  margin-bottom: 8px;
+}
+
+.skill-name {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.skill-desc {
+  font-size: 12px;
+  color: #666;
+}
+
+.skill-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-skill-test {
+  padding: 6px 16px;
+  border: 1px solid #000;
+  background: #fff;
+  color: #000;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-skill-test:hover {
+  background: #000;
+  color: #fff;
+}
+
+.toggle {
+  position: relative;
+  width: 40px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.toggle input {
+  display: none;
+}
+
+.toggle-slider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #ccc;
+  transition: 0.3s;
+}
+
+.toggle-slider::before {
+  content: "";
+  position: absolute;
+  height: 14px;
+  width: 14px;
+  left: 3px;
+  top: 3px;
+  background: white;
+  transition: 0.3s;
+}
+
+.toggle input:checked + .toggle-slider {
+  background: #000;
+}
+
+.toggle input:checked + .toggle-slider::before {
+  transform: translateX(20px);
+}
+
+.skills-empty {
+  text-align: center;
+  padding: 24px;
+  color: #666;
+}
+
+.btn-add {
+  width: 100%;
+  padding: 8px;
+  border: 1px dashed #999;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  margin-top: 12px;
+}
+
+/* Conversation Flow Builder */
+.flow-intro-card {
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border: 1px solid #ddd;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.flow-intro-content {
+  max-width: 800px;
+}
+
+.flow-intro-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  background: #000;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+}
+
+.flow-intro-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #000;
+  margin-bottom: 12px;
+}
+
+.flow-intro-text {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.7;
+  margin-bottom: 20px;
+}
+
+.flow-intro-features {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.flow-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #333;
+}
+
+.flow-feature-dot {
+  width: 6px;
+  height: 6px;
+  background: #000;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.flow-current-status {
+  background: #fafafa;
+  border: 1px solid #ddd;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+}
+
+.flow-status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.flow-status-left {
+  flex: 1;
+}
+
+.flow-status-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.flow-status-name {
+  font-size: 15px;
+  font-weight: 500;
+  color: #000;
+}
+
+.flow-visual-preview {
+  border: 1px solid #ddd;
+  background: #fff;
+}
+
+.flow-preview-label {
+  padding: 12px 16px;
+  background: #fafafa;
+  border-bottom: 1px solid #ddd;
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.flow-canvas {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
+  padding: 32px;
+  background: #fff;
+  overflow-x: auto;
+}
+
+.flow-node {
+  padding: 14px 18px;
+  border: 2px solid #ddd;
+  background: #fff;
+  min-width: 140px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.flow-node-start {
+  border-color: #00aa00;
+  background: #f0fdf4;
+}
+
+.flow-node-play {
+  border-color: #0066cc;
+  background: #f0f7ff;
+}
+
+.flow-node-collect {
+  border-color: #cc6600;
+  background: #fff8f0;
+}
+
+.flow-node-agent {
+  border-color: #000;
+  background: #fafafa;
+}
+
+.flow-node-end {
+  border-color: #666;
+  background: #f5f5f5;
+}
+
+.flow-node-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #000;
+  margin-bottom: 4px;
+}
+
+.flow-node-desc {
+  font-size: 11px;
+  color: #666;
+  line-height: 1.3;
+}
+
+.flow-connector {
+  width: 32px;
+  height: 2px;
+  background: #ddd;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.flow-connector::after {
+  content: '';
+  position: absolute;
+  right: -6px;
+  top: -3px;
+  width: 0;
+  height: 0;
+  border-left: 6px solid #ddd;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+}
+
+.flow-preview-note {
+  padding: 16px 20px;
+  background: #f8f9fa;
+  border-top: 1px solid #ddd;
+  font-size: 13px;
+  color: #666;
+  line-height: 1.6;
+}
+
+/* Test Panel */
+.test-panel {
+  border: 1px solid #ddd;
+  display: flex;
+  flex-direction: column;
+  height: 600px;
+}
+
+.channel-toggle-btn {
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  background: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-radius: 4px;
+}
+
+.channel-toggle-btn:hover {
+  background: #f5f5f5;
+  border-color: #000;
+}
+
+.test-chat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.test-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.test-message {
+  max-width: 80%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.test-message.user {
+  background: #000;
+  color: #fff;
+  align-self: flex-end;
+}
+
+.test-message.agent {
+  background: #f0f0f0;
+  align-self: flex-start;
+}
+
+.test-message.typing {
+  display: flex;
+  gap: 4px;
+  padding: 12px 16px;
+}
+
+.test-message.typing .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #666;
+  animation: typingDot 1.4s infinite;
+}
+
+.test-message.typing .dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.test-message.typing .dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typingDot {
+  0%, 60%, 100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-4px);
+  }
+}
+
+.test-suggestions {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.suggestions-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.suggestions-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.suggestion-chip {
+  padding: 12px 16px;
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #000;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: left;
+  white-space: normal;
+  line-height: 1.4;
+}
+
+.suggestion-chip:hover {
+  background: #e8e8e8;
+  border-color: #ccc;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.suggestion-chip:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.test-input {
+  padding: 12px;
+  border-top: 1px solid #ddd;
+  display: flex;
+  gap: 8px;
+}
+
+.test-input .input-field {
+  flex: 1;
+  margin: 0;
+}
+
+.btn-send {
+  padding: 8px 20px;
+  border: 1px solid #000;
+  background: #000;
+  color: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* Skill Test Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #fff;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  padding: 20px;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.modal-close {
+  padding: 4px 12px;
+  border: none;
+  background: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+  line-height: 1;
+}
+
+.modal-close:hover {
+  color: #000;
+}
+
+.modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.test-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.test-content-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid #ddd;
+  background: #fafafa;
+  font-weight: 600;
+  font-size: 13px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn-icon {
+  padding: 4px 12px;
+  border: 1px solid #ddd;
+  background: #fff;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.btn-icon:hover {
+  background: #f5f5f5;
+}
+
+/* Try-Now Voice */
+.voice-test-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.voice-test-status {
+  background: #f8f9fa;
+  border: 1px solid #ddd;
+  padding: 16px;
+}
+
+.voice-status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ccc;
+}
+
+.voice-status-indicator.idle .status-dot {
+  background: #666;
+}
+
+.voice-status-indicator.connecting .status-dot {
+  background: #ff8800;
+  animation: pulse 1.5s infinite;
+}
+
+.voice-status-indicator.connected .status-dot {
+  background: #00aa00;
+  animation: pulse 1.5s infinite;
+}
+
+.voice-status-indicator.ended .status-dot {
+  background: #cc0000;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.voice-test-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+.info-label {
+  color: #666;
+  font-weight: 500;
+}
+
+.info-value {
+  color: #000;
+  font-weight: 600;
+}
+
+.voice-test-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.btn-voice-call {
+  padding: 12px 32px;
+  border: 2px solid #00aa00;
+  background: #00aa00;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-voice-call:hover {
+  background: #009900;
+  border-color: #009900;
+}
+
+.btn-voice-end {
+  padding: 12px 32px;
+  border: 2px solid #cc0000;
+  background: #cc0000;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-voice-end:hover {
+  background: #bb0000;
+  border-color: #bb0000;
+}
+
+.voice-connecting {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  color: #666;
+}
+
+.voice-test-transcript {
+  flex: 1;
+  border: 1px solid #ddd;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.transcript-header {
+  padding: 12px 16px;
+  background: #fafafa;
+  border-bottom: 1px solid #ddd;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #666;
+}
+
+.transcript-messages {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.transcript-message {
+  padding: 12px;
+  border: 1px solid #ddd;
+  background: #fafafa;
+}
+
+.transcript-message.user {
+  background: #f0f7ff;
+  border-color: #0066cc;
+}
+
+.transcript-message.agent {
+  background: #f0fdf4;
+  border-color: #00aa00;
+}
+
+.transcript-speaker {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.transcript-text {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #000;
+  margin-bottom: 4px;
+}
+
+.transcript-time {
+  font-size: 11px;
+  color: #999;
+}
+
+.transcript-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+  font-size: 13px;
+}
+
+/* Skills Playground */
+.skills-playground {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.playground-skill-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.playground-skill-selector label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+}
+
+.playground-test-area {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.playground-input-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.playground-input-section label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+}
+
+.playground-result-section {
+  border: 1px solid #ddd;
+  background: #fafafa;
+}
+
+.result-header {
+  padding: 12px 16px;
+  background: #fff;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.result-status {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.result-status.success {
+  background: #d4f4dd;
+  color: #00aa00;
+}
+
+.result-status.error {
+  background: #ffd4d4;
+  color: #cc0000;
+}
+
+.result-content {
+  padding: 16px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #333;
+  background: #fff;
+  border-bottom: 1px solid #ddd;
+}
+
+.result-logs {
+  background: #f5f5f5;
+}
+
+.logs-header {
+  padding: 12px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #666;
+  letter-spacing: 0.5px;
+}
+
+.logs-content {
+  padding: 0 16px 16px 16px;
+}
+
+.log-entry {
+  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+  font-size: 11px;
+  line-height: 1.8;
+  color: #333;
+}
+
+.playground-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: #999;
+}
+
+.playground-empty p {
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+
+/* TEST Tab */
+.test-layout {
+  max-width: 1000px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.section-header h3 {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.scenarios-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.scenario-card {
+  padding: 20px;
+  border: 1px solid #ddd;
+  background: #fafafa;
+  transition: all 0.3s;
+}
+
+.scenario-card.running {
+  border-color: #4285f4;
+  background: #f0f7ff;
+}
+
+.scenario-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.scenario-name {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.btn-run {
+  padding: 6px 16px;
+  border: 1px solid #000;
+  background: #fff;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.btn-run:hover {
+  background: #000;
+  color: #fff;
+}
+
+.scenario-prompt {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 12px;
+}
+
+.scenario-result {
+  padding: 12px;
+  background: #fff;
+  border: 1px solid #ddd;
+}
+
+.result-label {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.result-text {
+  font-size: 13px;
+}
+
+.scenario-loading {
+  padding: 12px;
+  background: #f0f7ff;
+  border: 1px solid #4285f4;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: #666;
+  margin-top: 12px;
+}
+
+.loading-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.loading-dots .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #4285f4;
+  animation: loadingDot 1.4s infinite;
+}
+
+.loading-dots .dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.loading-dots .dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes loadingDot {
+  0%, 60%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+.btn-run:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.scenarios-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: #666;
+}
+
+/* DEPLOY Tab */
+.deploy-layout {
+  max-width: 1000px;
+}
+
+.deploy-section {
+  margin-bottom: 40px;
+}
+
+.deploy-section h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.section-desc {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 24px;
+}
+
+/* Channel Deployment Container */
+.channels-deployment-container {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.channel-section-header {
+  padding: 16px 20px;
+  background: #f5f5f5;
+  border-left: 4px solid #000;
+  margin-bottom: 16px;
+}
+
+.channel-section-header.additional-channels-header {
+  border-left-color: #666;
+  background: #fafafa;
+  margin-top: 32px;
+}
+
+.section-header-title {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.section-header-desc {
+  font-size: 13px;
+  color: #666;
+}
+
+.channels-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.channels-grid-single {
+  display: grid;
+  grid-template-columns: 1fr;
+  max-width: 50%;
+  gap: 20px;
+}
+
+.channel-card {
+  padding: 20px;
+  border: 2px solid #ddd;
+  background: #fafafa;
+  transition: all 0.3s;
+}
+
+.channel-card.enabled {
+  border-color: #000;
+  background: #fff;
+}
+
+.channel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.channel-header-content {
+  flex: 1;
+}
+
+.channel-name {
+  font-weight: 600;
+  font-size: 16px;
+  margin-bottom: 4px;
+  color: #000;
+}
+
+.channel-card:not(.enabled) .channel-name {
+  color: #999;
+}
+
+.channel-desc {
+  font-size: 13px;
+  color: #666;
+}
+
+.channel-card:not(.enabled) .channel-desc {
+  color: #aaa;
+}
+
+/* iOS-Style Toggle Switch */
+.channel-toggle {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.channel-toggle input {
+  display: none;
+}
+
+.channel-toggle-slider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #e0e0e0;
+  border-radius: 24px;
+  transition: all 0.25s;
+}
+
+.channel-toggle-slider::before {
+  content: "";
+  position: absolute;
+  height: 20px;
+  width: 20px;
+  left: 2px;
+  top: 2px;
+  background: white;
+  border-radius: 50%;
+  transition: all 0.25s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.channel-toggle input:checked + .channel-toggle-slider {
+  background: #34c759;
+}
+
+.channel-toggle input:checked + .channel-toggle-slider::before {
+  transform: translateX(20px);
+}
+
+.channel-toggle:hover .channel-toggle-slider {
+  background: #d0d0d0;
+}
+
+.channel-toggle input:checked:hover + .channel-toggle-slider {
+  background: #2fb350;
+}
+
+.channel-config {
+  padding-top: 16px;
+  margin-top: 16px;
+  border-top: 1px solid #ddd;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.config-item {
+  margin-bottom: 12px;
+}
+
+.config-item label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.input-field-small {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+textarea.input-field-small {
+  resize: vertical;
+}
+
+.code-block {
+  padding: 16px;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  font-family: monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  margin-bottom: 12px;
+  overflow-x: auto;
+}
+
+.status-card {
+  padding: 20px;
+  border: 1px solid #ddd;
+  background: #fafafa;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.status-indicator {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ccc;
+}
+
+.status-indicator.live {
+  background: #00aa00;
+}
+
+.status-indicator.draft {
+  background: #666;
+}
+
+.status-indicator.paused {
+  background: #ff8800;
+}
+
+.status-info {
+  flex: 1;
+}
+
+.status-label {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 2px;
+}
+
+.status-value {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* ANALYZE Tab */
+.analyze-layout {
+  max-width: 1000px;
+}
+
+.metrics-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+.metric-card {
+  padding: 20px;
+  border: 1px solid #ddd;
+  background: #fafafa;
+}
+
+.metric-label {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.metric-value {
+  font-size: 32px;
+  font-weight: 600;
+}
+
+.no-data {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.no-data h3 {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.no-data p {
+  color: #666;
+  margin-bottom: 24px;
+}
+
+.chart-section h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.chart-placeholder {
+  height: 300px;
+  border: 1px solid #ddd;
+  background: #fafafa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+}
+
+/* COMPASS Validation Panel */
+.validation-panel {
+  margin-bottom: 24px;
+  border: 2px solid #ff8800;
+  background: #fff9f0;
+}
+
+.validation-header {
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  background: #fff4e5;
+  border-bottom: 1px solid #ffcc80;
+}
+
+.validation-header:hover {
+  background: #ffe8cc;
+}
+
+.validation-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.validation-icon {
+  font-size: 16px;
+}
+
+.validation-toggle {
+  width: 24px;
+  height: 24px;
+  border: 1px solid #ff8800;
+  background: #fff;
+  color: #ff8800;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.validation-content {
+  padding: 16px;
+}
+
+.validation-message {
+  padding: 12px;
+  margin-bottom: 8px;
+  border-left: 4px solid;
+  background: #fff;
+}
+
+.validation-message.error {
+  border-left-color: #ea4335;
+  background: #fce8e6;
+}
+
+.validation-message.warning {
+  border-left-color: #ff8800;
+  background: #fff4e5;
+}
+
+.validation-message.info {
+  border-left-color: #4285f4;
+  background: #f0f7ff;
+}
+
+.validation-msg-header {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 4px;
+  align-items: center;
+}
+
+.validation-severity {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+
+.validation-message.error .validation-severity {
+  background: #ea4335;
+  color: #fff;
+}
+
+.validation-message.warning .validation-severity {
+  background: #ff8800;
+  color: #fff;
+}
+
+.validation-message.info .validation-severity {
+  background: #4285f4;
+  color: #fff;
+}
+
+.validation-field {
+  font-weight: 600;
+  font-size: 12px;
+  color: #333;
+}
+
+.validation-msg-text {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #333;
+}
+
+/* Conversation History */
+.conversation-history-section {
+  margin-top: 40px;
+}
+
+.conversation-history-section h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.conversations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.conversation-card {
+  padding: 16px;
+  border: 1px solid #ddd;
+  background: #fafafa;
+  transition: all 0.2s;
+}
+
+.conversation-card:hover {
+  border-color: #999;
+  background: #f5f5f5;
+}
+
+.conversation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #ddd;
+}
+
+.conversation-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.conversation-type {
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+}
+
+.conversation-scenario {
+  font-size: 12px;
+  padding: 2px 8px;
+  background: #e0e0e0;
+  color: #333;
+  border-radius: 2px;
+}
+
+.conversation-time {
+  font-size: 12px;
+  color: #999;
+}
+
+.conversation-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.preview-message {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.preview-message.user {
+  color: #333;
+}
+
+.preview-message.agent {
+  color: #666;
+}
+
+.preview-message strong {
+  font-weight: 600;
+}
+
+/* Skills Builder Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s;
+}
+
+.modal-dialog {
+  background: #fff;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s;
+}
+
+.modal-dialog-large {
+  max-width: 900px;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.modal-close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  font-size: 28px;
+  cursor: pointer;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.modal-close:hover {
+  color: #000;
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #ddd;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+</style>
