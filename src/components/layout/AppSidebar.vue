@@ -79,6 +79,12 @@
                   :class="{ active: currentRoute.includes('/test') }">
                   Test
                 </router-link>
+                <router-link
+                  :to="`/agents-v2/${agent.id}/deploy`"
+                  class="tab-link"
+                  :class="{ active: currentRoute.includes('/deploy') }">
+                  Deploy
+                </router-link>
               </template>
             </div>
           </div>

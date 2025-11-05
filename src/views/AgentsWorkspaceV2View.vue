@@ -27,6 +27,10 @@
             <span v-else-if="lastSaved" class="meta-divider">·</span>
             <span v-else-if="lastSaved" class="auto-save-status saved">Saved</span>
           </div>
+          <!-- Unpublished Changes Alert (below meta) -->
+          <div v-if="agent.status === 'live' && hasUnpublishedChanges" class="unpublished-changes-alert">
+            ⚠️ You have unpublished changes. Click "Publish Update" to deploy.
+          </div>
         </div>
         <div class="header-right">
           <!-- Agent Actions Menu (3-dot menu) - Hide during wizard mode -->
@@ -45,16 +49,10 @@
           </div>
 
           <button
-            v-if="agent.status === 'draft' && !wizardMode"
+            v-if="(agent.status === 'draft' || hasUnpublishedChanges) && !wizardMode"
             class="btn-primary"
             @click="navigateToDeploy">
-            Review & Deploy
-          </button>
-          <button
-            v-else-if="agent.status === 'live'"
-            class="btn-secondary"
-            @click="unpublishAgent">
-            Unpublish
+            {{ agent.status === 'live' ? 'Publish Update' : 'Review & Deploy' }}
           </button>
         </div>
       </div>
@@ -360,6 +358,15 @@ Policies:
 
           <!-- Main Content (Middle Column) -->
           <div class="build-main" ref="buildMainContent">
+            <!-- Live Agent Warning Banner -->
+            <div v-if="agent.status === 'live'" class="live-agent-warning">
+              <div class="warning-icon">ℹ️</div>
+              <div class="warning-content">
+                <strong>Editing Live Agent {{ agent.version || 'v1.0' }}</strong>
+                <p>Changes are auto-saved as a draft. Click "Publish Update" when ready to deploy changes to live users.</p>
+              </div>
+            </div>
+
             <!-- Wizard Mode Toggle (only show for draft agents who haven't completed onboarding) -->
             <div v-if="agent.status === 'draft' && agent.needsWizard !== false" class="wizard-mode-prompt">
               <span>Need help getting started?</span>
@@ -1249,55 +1256,6 @@ Policies:
       </div>
     </div>
 
-    <!-- Unpublish Agent Confirmation Modal -->
-    <div v-if="showUnpublishModal" class="modal-overlay" @click="closeUnpublishModal">
-      <div class="modal-dialog modal-md" @click.stop>
-        <div class="modal-header">
-          <h2>Unpublish Agent?</h2>
-          <button class="modal-close" @click="closeUnpublishModal">×</button>
-        </div>
-        <div class="modal-body">
-          <p class="modal-intro">Are you sure you want to unpublish <strong>{{ agent?.name }}</strong>?</p>
-
-          <!-- Activity Warning -->
-          <div v-if="hasOngoingActivity" class="activity-warning">
-            <div class="warning-icon">⚠️</div>
-            <div class="warning-content">
-              <div class="warning-title">Active Sessions Detected</div>
-              <div class="warning-details">
-                <div v-if="ongoingChatSessions > 0" class="activity-item">
-                  <span class="activity-count">{{ ongoingChatSessions }}</span> active chat session{{ ongoingChatSessions > 1 ? 's' : '' }}
-                </div>
-                <div v-if="ongoingVoiceCalls > 0" class="activity-item">
-                  <span class="activity-count">{{ ongoingVoiceCalls }}</span> active voice call{{ ongoingVoiceCalls > 1 ? 's' : '' }}
-                </div>
-              </div>
-              <p class="warning-note">These sessions will be immediately terminated if you unpublish.</p>
-            </div>
-          </div>
-
-          <!-- No Activity -->
-          <div v-else class="no-activity-info">
-            <p>No active sessions detected. The agent can be safely unpublished.</p>
-          </div>
-
-          <div class="unpublish-info">
-            <h4>What happens when you unpublish:</h4>
-            <ul>
-              <li>Agent will stop accepting new conversations</li>
-              <li>You'll be able to edit configuration and settings</li>
-              <li>You can republish anytime after making changes</li>
-            </ul>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-secondary" @click="closeUnpublishModal">Cancel</button>
-          <button class="btn-primary" @click="confirmUnpublish">
-            {{ hasOngoingActivity ? 'Unpublish Anyway' : 'Unpublish Agent' }}
-          </button>
-        </div>
-      </div>
-    </div>
 
     <!-- Delete Agent Confirmation Modal -->
     <div v-if="showDeleteModal" class="modal-overlay" @click="closeDeleteModal">
@@ -1462,6 +1420,8 @@ const autoSaving = ref(false)
 const lastSaved = ref(false)
 const buildMainContent = ref(null)
 const activeBuildSection = ref('configuration')
+const hasUnpublishedChanges = ref(false) // Track if live agent has been edited
+const lastPublishedSnapshot = ref(null) // Store snapshot of last published version
 
 // Test scenarios state
 const showTestBuilderModal = ref(false)
@@ -1475,10 +1435,6 @@ const runningTests = ref({})
 const scenarioResults = ref({})
 const runningAllTests = ref(false)
 
-// Unpublish modal state
-const showUnpublishModal = ref(false)
-const ongoingChatSessions = ref(0)
-const ongoingVoiceCalls = ref(0)
 
 // Agent Actions Menu & Modals
 const showActionsMenu = ref(false)
@@ -1694,9 +1650,6 @@ const activeChannelLabels = computed(() => {
   return labels
 })
 
-const hasOngoingActivity = computed(() => {
-  return ongoingChatSessions.value > 0 || ongoingVoiceCalls.value > 0
-})
 
 // Wizard Mode Computed
 const isNewAgent = computed(() => {
@@ -1795,6 +1748,11 @@ function handleInputChange() {
   // Show saving indicator
   autoSaving.value = true
   lastSaved.value = false
+
+  // Mark as having unpublished changes if agent is live
+  if (agent.value && agent.value.status === 'live') {
+    hasUnpublishedChanges.value = true
+  }
 
   // Debounce save - wait 800ms after last input
   saveTimeout = setTimeout(() => {
@@ -1942,44 +1900,6 @@ function navigateToDeploy() {
   router.push(`/agents-v2/${agent.value.id}/deploy`)
 }
 
-function unpublishAgent() {
-  if (!agent.value) return
-
-  // Simulate checking for ongoing activity (in real app, would check via API)
-  // For demo: randomly set some activity for testing
-  ongoingChatSessions.value = Math.random() > 0.7 ? Math.floor(Math.random() * 3) + 1 : 0
-  ongoingVoiceCalls.value = Math.random() > 0.8 ? Math.floor(Math.random() * 2) + 1 : 0
-
-  // Show confirmation modal
-  showUnpublishModal.value = true
-}
-
-function closeUnpublishModal() {
-  showUnpublishModal.value = false
-  // Reset activity counters
-  ongoingChatSessions.value = 0
-  ongoingVoiceCalls.value = 0
-}
-
-function confirmUnpublish() {
-  if (!agent.value) return
-
-  // Update agent status to draft
-  agent.value.status = 'draft'
-
-  // Track that this agent has been published before
-  agent.value.hasBeenPublished = true
-  agent.value.lastUnpublishedDate = new Date().toISOString()
-
-  saveAgent()
-
-  // Close modal
-  showUnpublishModal.value = false
-
-  // Reset activity counters
-  ongoingChatSessions.value = 0
-  ongoingVoiceCalls.value = 0
-}
 
 // Agent Actions Menu Functions
 function toggleActionsMenu() {
@@ -5941,6 +5861,58 @@ textarea.input-field {
 }
 
 /* Wizard Mode Prompt in Expert Mode */
+/* Live Agent Info Banner */
+.live-agent-warning {
+  background: #d1ecf1;
+  border: 1px solid #0c5460;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.live-agent-warning .warning-icon {
+  font-size: 20px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.live-agent-warning .warning-content {
+  flex: 1;
+}
+
+.live-agent-warning .warning-content strong {
+  display: block;
+  color: #0c5460;
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+
+.live-agent-warning .warning-content p {
+  color: #0c5460;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Unpublished Changes Alert */
+.unpublished-changes-alert {
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: #856404;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  max-width: 100%;
+}
+
 .wizard-mode-prompt {
   background: #f8f9fa;
   border: 1px solid #e0e0e0;
