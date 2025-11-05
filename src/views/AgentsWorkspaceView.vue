@@ -2047,7 +2047,10 @@
                     <h4>Add Chat Widget to Your Website</h4>
                     <p>Copy and paste this code snippet before the closing body tag on your website:</p>
                     <div class="code-snippet">
-                      <pre>{{ '<script src="https://cdn.dialpad.com/widget.js"></script>\n<script>\n  DialpadAI.init({ agentId: "' + selectedAgent?.id + '" });\n</script>' }}</pre>
+                      <pre>&lt;script src="https://cdn.dialpad.com/widget.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  DialpadAI.init({ agentId: "{{ selectedAgent?.id }}" });
+&lt;/script&gt;</pre>
                     </div>
                   </div>
                 </div>

@@ -297,56 +297,11 @@ function getDefaultInstructions() {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Step Context */
-.step-context {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  margin-bottom: 32px;
-  padding: 12px 20px;
-  background: #f5f5f5;
-  border: 1px solid #ddd;
-  width: fit-content;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.context-value {
-  font-size: 16px;
-  font-weight: 600;
-  color: #000;
-}
-
-.context-back {
-  background: none;
-  border: none;
-  font-size: 14px;
-  color: #666;
-  text-decoration: underline;
-  cursor: pointer;
-  padding: 0 0 0 12px;
-  margin-left: 4px;
-  border-left: 1px solid #ddd;
-  transition: color 0.2s;
-}
-
-.context-back:hover {
-  color: #000;
-}
-
 .step-content h1 {
   font-size: 48px;
   font-weight: 600;
   text-align: center;
   margin-bottom: 12px;
-}
-
-.secondary-heading {
-  font-size: 28px;
-  font-weight: 600;
-  text-align: center;
-  margin: 0 0 12px 0;
 }
 
 .step-description {
