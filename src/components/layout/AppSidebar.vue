@@ -302,7 +302,7 @@ function scrollToElement(sectionId) {
 function resetDemo() {
   if (confirm('This will clear all demo data and reload the page. Continue?')) {
     localStorage.clear()
-    window.location.href = '/daart-onboarding-prototype/'
+    window.location.href = window.location.origin + window.location.pathname + '#/onboarding-v2'
   }
 }
 </script>
