@@ -298,59 +298,6 @@ Policies:
                 </div>
               </div>
 
-              <!-- Step 3: Customize appearance -->
-              <div v-if="wizardStep === 3" class="wizard-step">
-                <h2>Customize appearance</h2>
-                <p class="wizard-step-description">Make the chat widget match your brand</p>
-
-                <div class="form-group">
-                  <label>Welcome Message</label>
-                  <input
-                    v-model="agent.channels.webChat.welcomeMessage"
-                    @input="handleInputChange"
-                    type="text"
-                    class="input-field"
-                    placeholder="Hi! How can I help you today?">
-                  <div class="hint">First message customers see when opening the chat</div>
-                </div>
-
-                <div class="form-group">
-                  <label>Widget Position</label>
-                  <div class="position-selector">
-                    <div class="position-option" :class="{ selected: agent.channels.webChat.widgetPosition === 'bottom-right' }" @click="agent.channels.webChat.widgetPosition = 'bottom-right'; handleInputChange()">
-                      <div class="position-preview">
-                        <div class="preview-widget bottom-right"></div>
-                      </div>
-                      <div class="position-label">Bottom Right</div>
-                    </div>
-                    <div class="position-option" :class="{ selected: agent.channels.webChat.widgetPosition === 'bottom-left' }" @click="agent.channels.webChat.widgetPosition = 'bottom-left'; handleInputChange()">
-                      <div class="position-preview">
-                        <div class="preview-widget bottom-left"></div>
-                      </div>
-                      <div class="position-label">Bottom Left</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="form-group">
-                  <label>Primary Color</label>
-                  <div class="color-picker-group">
-                    <input
-                      v-model="agent.channels.webChat.primaryColor"
-                      @input="handleInputChange"
-                      type="color"
-                      class="color-input">
-                    <input
-                      v-model="agent.channels.webChat.primaryColor"
-                      @input="handleInputChange"
-                      type="text"
-                      class="input-field color-text"
-                      placeholder="#6366f1">
-                  </div>
-                  <div class="hint">Used for the chat widget and messages</div>
-                </div>
-              </div>
-
               <!-- Completion Step -->
               <div v-if="wizardStep > totalWizardSteps" class="wizard-step wizard-complete">
                 <h2>You're all set!</h2>
@@ -1759,8 +1706,8 @@ const isNewAgent = computed(() => {
 })
 
 const totalWizardSteps = computed(() => {
-  // Streamlined onboarding: 3 steps (Configure Agent, Add Knowledge, Customize Appearance)
-  return 3
+  // Streamlined onboarding: 2 steps (Configure Agent, Add Knowledge)
+  return 2
 })
 
 // Methods
