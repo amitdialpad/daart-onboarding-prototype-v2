@@ -609,13 +609,170 @@ Policies:
                       </div>
 
                       <div class="form-group">
-                        <label>Widget Position</label>
-                        <select v-model="agent.channels.webChat.widgetPosition" @change="handleInputChange" class="input-field">
-                          <option value="bottom-right">Bottom Right</option>
-                          <option value="bottom-left">Bottom Left</option>
+                        <label>
+                          <input type="checkbox" v-model="agent.channels.webChat.enableProactive" @change="handleInputChange">
+                          Enable Proactive Greeting
+                        </label>
+                        <textarea
+                          v-if="agent.channels.webChat.enableProactive"
+                          v-model="agent.channels.webChat.proactiveMessage"
+                          @input="handleInputChange"
+                          rows="2"
+                          class="input-field"
+                          placeholder="👋 Need help? I'm here to assist!"></textarea>
+                        <div class="hint">Auto-popup message to engage visitors</div>
+                      </div>
+
+                      <div class="form-group">
+                        <label>Expected Response Time</label>
+                        <input
+                          v-model="agent.channels.webChat.responseTime"
+                          @input="handleInputChange"
+                          type="text"
+                          class="input-field"
+                          placeholder="Usually replies in 2 minutes">
+                        <div class="hint">Set customer expectations</div>
+                      </div>
+
+                      <div class="form-group">
+                        <label>
+                          <input type="checkbox" v-model="agent.channels.webChat.showTypingIndicator" @change="handleInputChange">
+                          Show Typing Indicator
+                        </label>
+                        <div class="hint">Show "..." when agent is typing</div>
+                      </div>
+
+                      <div class="form-group">
+                        <label>Away Message</label>
+                        <textarea
+                          v-model="agent.channels.webChat.awayMessage"
+                          @input="handleInputChange"
+                          rows="2"
+                          class="input-field"
+                          placeholder="Let me look that up for you..."></textarea>
+                        <div class="hint">Message shown when agent is processing</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Availability & Hours -->
+                  <div class="collapsible-section">
+                    <div class="collapsible-header" @click="toggleConfigSection('chatAvailability')">
+                      <span class="section-title">Availability & Hours</span>
+                      <span class="chevron" :class="{ expanded: configSections.chatAvailability }">›</span>
+                    </div>
+                    <div v-if="configSections.chatAvailability" class="collapsible-content">
+                      <div class="form-group">
+                        <label>Business Hours</label>
+                        <input
+                          v-model="agent.channels.webChat.businessHours"
+                          @input="handleInputChange"
+                          type="text"
+                          class="input-field"
+                          placeholder="Monday-Friday, 9 AM - 5 PM EST">
+                        <div class="hint">When is the agent available?</div>
+                      </div>
+
+                      <div class="form-group">
+                        <label>Offline Behavior</label>
+                        <select v-model="agent.channels.webChat.offlineBehavior" @change="handleInputChange" class="input-field">
+                          <option value="show-message">Show offline message</option>
+                          <option value="collect-email">Collect email for follow-up</option>
+                          <option value="always-on">Always available (24/7)</option>
                         </select>
                       </div>
 
+                      <div v-if="agent.channels.webChat.offlineBehavior !== 'always-on'" class="form-group">
+                        <label>Offline Message</label>
+                        <textarea
+                          v-model="agent.channels.webChat.offlineMessage"
+                          @input="handleInputChange"
+                          rows="2"
+                          class="input-field"
+                          placeholder="We're currently offline. Leave your email and we'll get back to you!"></textarea>
+                      </div>
+
+                      <div class="form-group">
+                        <label>Auto-away Timeout (minutes)</label>
+                        <input
+                          v-model="agent.channels.webChat.autoAwayTimeout"
+                          @input="handleInputChange"
+                          type="number"
+                          class="input-field"
+                          placeholder="5">
+                        <div class="hint">Mark as away after inactivity</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Escalation & Handoff -->
+                  <div class="collapsible-section">
+                    <div class="collapsible-header" @click="toggleConfigSection('chatEscalation')">
+                      <span class="section-title">Escalation & Handoff</span>
+                      <span class="chevron" :class="{ expanded: configSections.chatEscalation }">›</span>
+                    </div>
+                    <div v-if="configSections.chatEscalation" class="collapsible-content">
+                      <div class="form-group">
+                        <label>Transfer Conditions</label>
+                        <textarea
+                          v-model="agent.channels.webChat.transferConditions"
+                          @input="handleInputChange"
+                          rows="3"
+                          class="input-field"
+                          placeholder="e.g., Transfer if customer asks for human agent, mentions refund, or expresses frustration"></textarea>
+                        <div class="hint">When should the agent transfer to a human?</div>
+                      </div>
+
+                      <div class="form-group">
+                        <label>Transfer Destination</label>
+                        <select v-model="agent.channels.webChat.transferDestination" @change="handleInputChange" class="input-field">
+                          <option value="">Select destination</option>
+                          <option value="support-queue">Support Queue</option>
+                          <option value="sales-queue">Sales Queue</option>
+                          <option value="technical-queue">Technical Queue</option>
+                          <option value="manager-queue">Manager Queue</option>
+                        </select>
+                      </div>
+
+                      <div class="form-group">
+                        <label>Handoff Message</label>
+                        <textarea
+                          v-model="agent.channels.webChat.handoffMessage"
+                          @input="handleInputChange"
+                          rows="2"
+                          class="input-field"
+                          placeholder="Let me connect you with a team member who can help..."></textarea>
+                        <div class="hint">What the user sees during transfer</div>
+                      </div>
+
+                      <div class="form-group">
+                        <label>Context to Transfer</label>
+                        <textarea
+                          v-model="agent.channels.webChat.contextToTransfer"
+                          @input="handleInputChange"
+                          rows="2"
+                          class="input-field"
+                          placeholder="Full conversation history, user info, detected intent"></textarea>
+                        <div class="hint">What information to pass to the human agent</div>
+                      </div>
+
+                      <div class="form-group">
+                        <label>
+                          <input type="checkbox" v-model="agent.channels.webChat.enableTranscript" @change="handleInputChange">
+                          Enable Email Transcript
+                        </label>
+                        <div class="hint">Send chat history to customer via email</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Widget Appearance -->
+                  <div class="collapsible-section">
+                    <div class="collapsible-header" @click="toggleConfigSection('chatAppearance')">
+                      <span class="section-title">Widget Appearance</span>
+                      <span class="chevron" :class="{ expanded: configSections.chatAppearance }">›</span>
+                    </div>
+                    <div v-if="configSections.chatAppearance" class="collapsible-content">
                       <div class="form-group">
                         <label>Primary Color</label>
                         <div class="color-picker-group">
@@ -631,6 +788,37 @@ Policies:
                             class="input-field color-text"
                             placeholder="#6366f1">
                         </div>
+                        <div class="hint">Main color for the chat widget</div>
+                      </div>
+
+                      <div class="form-group">
+                        <label>Widget Position</label>
+                        <select v-model="agent.channels.webChat.widgetPosition" @change="handleInputChange" class="input-field">
+                          <option value="bottom-right">Bottom Right</option>
+                          <option value="bottom-left">Bottom Left</option>
+                          <option value="top-right">Top Right</option>
+                          <option value="top-left">Top Left</option>
+                        </select>
+                      </div>
+
+                      <div class="form-group">
+                        <label>Agent Display Name</label>
+                        <input
+                          v-model="agent.channels.webChat.displayName"
+                          @input="handleInputChange"
+                          type="text"
+                          class="input-field"
+                          placeholder="Support Assistant">
+                        <div class="hint">Name shown to customers in the chat widget</div>
+                      </div>
+
+                      <div class="form-group">
+                        <label>Widget Size</label>
+                        <select v-model="agent.channels.webChat.widgetSize" @change="handleInputChange" class="input-field">
+                          <option value="compact">Compact</option>
+                          <option value="standard">Standard</option>
+                          <option value="large">Large</option>
+                        </select>
                       </div>
                     </div>
                   </div>
@@ -1518,10 +1706,10 @@ const buildSections = computed(() => {
 
 // Collapsible sections state for chat/voice config
 const configSections = ref({
-  chatAppearance: true,
   chatMessages: false,
   chatAvailability: false,
   chatEscalation: false,
+  chatAppearance: false,
   voiceSettings: true,
   voiceGreetings: false,
   voiceTransfer: false

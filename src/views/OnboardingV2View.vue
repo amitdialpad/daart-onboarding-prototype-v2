@@ -203,7 +203,27 @@ function createAgent() {
         enabled: true,  // Default enabled
         widgetPosition: 'bottom-right',
         primaryColor: '#6366f1',
-        welcomeMessage: 'Hi! How can I help you today?'
+        welcomeMessage: 'Hi! How can I help you today?',
+        // Messages & Greetings
+        enableProactive: false,
+        proactiveMessage: '👋 Need help? I\'m here to assist!',
+        responseTime: 'Usually replies in 2 minutes',
+        showTypingIndicator: true,
+        awayMessage: 'Let me look that up for you...',
+        // Availability & Hours
+        businessHours: 'Monday-Friday, 9 AM - 5 PM EST',
+        offlineBehavior: 'always-on',
+        offlineMessage: 'We\'re currently offline. Leave your email and we\'ll get back to you!',
+        autoAwayTimeout: 5,
+        // Escalation & Handoff
+        transferConditions: '',
+        transferDestination: '',
+        handoffMessage: 'Let me connect you with a team member who can help...',
+        contextToTransfer: 'Full conversation history, user info, detected intent',
+        enableTranscript: false,
+        // Widget Appearance
+        displayName: 'Support Assistant',
+        widgetSize: 'standard'
       },
       voice: {
         enabled: false,
