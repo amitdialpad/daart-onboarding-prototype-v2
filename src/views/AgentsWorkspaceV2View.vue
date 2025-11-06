@@ -215,25 +215,59 @@
                 <div class="knowledge-tabs">
                   <button
                     class="knowledge-tab"
-                    :class="{ active: wizardKnowledgeTab === 'text' }"
-                    @click="wizardKnowledgeTab = 'text'">
-                    Text Content
-                  </button>
-                  <button
-                    class="knowledge-tab"
                     :class="{ active: wizardKnowledgeTab === 'documents' }"
                     @click="wizardKnowledgeTab = 'documents'">
                     Documents
                   </button>
                   <button
                     class="knowledge-tab"
+                    :class="{ active: wizardKnowledgeTab === 'conversations' }"
+                    @click="wizardKnowledgeTab = 'conversations'">
+                    Conversations
+                  </button>
+                  <button
+                    class="knowledge-tab"
+                    :class="{ active: wizardKnowledgeTab === 'text' }"
+                    @click="wizardKnowledgeTab = 'text'">
+                    Snippets
+                  </button>
+                  <button
+                    class="knowledge-tab"
                     :class="{ active: wizardKnowledgeTab === 'website' }"
                     @click="wizardKnowledgeTab = 'website'">
-                    Website
+                    Websites
                   </button>
                 </div>
 
-                <!-- Text Content Tab -->
+                <!-- Documents Tab -->
+                <div v-if="wizardKnowledgeTab === 'documents'" class="knowledge-tab-content">
+                  <div class="upload-area">
+                    <div class="upload-icon">📄</div>
+                    <h3>Upload documents</h3>
+                    <p>Add PDFs, Word docs, or text files for your agent to learn from</p>
+                    <button class="btn-secondary">Choose Files</button>
+                    <div class="upload-hint">Supported: PDF, DOCX, TXT, CSV (Max 10MB each)</div>
+                  </div>
+                  <div class="feature-note">
+                    <p><strong>Note:</strong> Document upload will be functional after completing the wizard. For now, you can add text content or website URLs.</p>
+                  </div>
+                </div>
+
+                <!-- Conversations Tab -->
+                <div v-if="wizardKnowledgeTab === 'conversations'" class="knowledge-tab-content">
+                  <div class="upload-area">
+                    <div class="upload-icon">💬</div>
+                    <h3>Import conversations</h3>
+                    <p>Upload past conversations to train your agent (CSV or JSON format)</p>
+                    <button class="btn-secondary">Upload Conversations</button>
+                    <div class="upload-hint">CSV or JSON format (Max 5MB each)</div>
+                  </div>
+                  <div class="feature-note">
+                    <p><strong>Note:</strong> Conversation import will be functional after completing the wizard.</p>
+                  </div>
+                </div>
+
+                <!-- Snippets Tab -->
                 <div v-if="wizardKnowledgeTab === 'text'" class="knowledge-tab-content">
                   <div class="form-group">
                     <label>Knowledge Base Content</label>
@@ -259,21 +293,7 @@ Policies:
                   </div>
                 </div>
 
-                <!-- Documents Tab -->
-                <div v-if="wizardKnowledgeTab === 'documents'" class="knowledge-tab-content">
-                  <div class="upload-area">
-                    <div class="upload-icon">📄</div>
-                    <h3>Upload documents</h3>
-                    <p>Add PDFs, Word docs, or text files for your agent to learn from</p>
-                    <button class="btn-secondary">Choose Files</button>
-                    <div class="upload-hint">Supported: PDF, DOCX, TXT, CSV (Max 10MB each)</div>
-                  </div>
-                  <div class="feature-note">
-                    <p><strong>Note:</strong> Document upload will be functional after completing the wizard. For now, you can add text content or website URLs.</p>
-                  </div>
-                </div>
-
-                <!-- Website Tab -->
+                <!-- Websites Tab -->
                 <div v-if="wizardKnowledgeTab === 'website'" class="knowledge-tab-content">
                   <div class="form-group">
                     <label>Website URL</label>
@@ -428,92 +448,232 @@ Policies:
             <!-- Knowledge Base -->
             <div id="knowledge-base" class="config-section build-section-anchor">
               <h3>Knowledge Base</h3>
-              <p class="section-intro">Select which knowledge sources this agent can access</p>
+              <p class="section-intro">Add knowledge sources for your agent to reference when answering questions</p>
 
-              <div class="knowledge-header">
-                <p class="knowledge-intro">
-                  Knowledge is managed centrally. Select the sources you want this agent to use.
-                </p>
-                <router-link to="/knowledge-v2" class="btn-secondary">
-                  Manage Knowledge Sources →
-                </router-link>
-              </div>
+              <!-- Knowledge Accordion -->
+              <div class="knowledge-accordion">
 
-              <!-- Knowledge Sources Selection -->
-              <div class="knowledge-sources-list">
-                <!-- Text Content -->
-                <div v-if="availableKnowledge.textContent" class="knowledge-source-item">
-                  <div class="source-checkbox">
-                    <label class="checkbox-label">
+                <!-- Integrations Accordion Item -->
+                <div class="accordion-item">
+                  <div class="accordion-header" @click="knowledgeTab = knowledgeTab === 'integrations' ? '' : 'integrations'">
+                    <div class="accordion-title">
+                      <span>Integrations</span>
+                      <span class="accordion-count" v-if="agent.knowledgeSources.integrations && agent.knowledgeSources.integrations.length > 0">
+                        ({{ agent.knowledgeSources.integrations.length }})
+                      </span>
+                    </div>
+                    <span class="accordion-icon">{{ knowledgeTab === 'integrations' ? '−' : '+' }}</span>
+                  </div>
+                  <div v-if="knowledgeTab === 'integrations'" class="accordion-content">
+                    <p class="tab-description">Connect platforms like Notion, Confluence, Google Drive, Slack, etc.</p>
+
+                    <div v-if="agent.knowledgeSources.integrations && agent.knowledgeSources.integrations.length > 0" class="connected-integrations">
+                      <h4>Connected Integrations</h4>
+                      <div v-for="integration in agent.knowledgeSources.integrations" :key="integration.id" class="integration-item">
+                        <div class="integration-info">
+                          <strong>{{ integration.name }}</strong>
+                          <span class="integration-meta">{{ integration.itemCount }} items</span>
+                        </div>
+                        <button class="btn-remove-small" @click="disconnectIntegration(integration.id)">Remove</button>
+                      </div>
+                    </div>
+
+                    <h4>{{ agent.knowledgeSources.integrations && agent.knowledgeSources.integrations.length > 0 ? 'Add More Integrations' : 'Available Integrations' }}</h4>
+                    <div class="integrations-grid">
+                      <button v-for="platform in availableIntegrationPlatforms" :key="platform.id"
+                              class="integration-card" @click="connectIntegrationWorkspace(platform.id)">
+                        <strong>{{ platform.name }}</strong>
+                        <span class="integration-status">{{ platform.status }}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Documents Accordion Item -->
+                <div class="accordion-item">
+                  <div class="accordion-header" @click="knowledgeTab = knowledgeTab === 'documents' ? '' : 'documents'">
+                    <div class="accordion-title">
+                      <span>Documents</span>
+                      <span class="accordion-count" v-if="agent.knowledgeSources.documents && agent.knowledgeSources.documents.length > 0">
+                        ({{ agent.knowledgeSources.documents.length }})
+                      </span>
+                    </div>
+                    <span class="accordion-icon">{{ knowledgeTab === 'documents' ? '−' : '+' }}</span>
+                  </div>
+                  <div v-if="knowledgeTab === 'documents'" class="accordion-content">
+                    <p class="tab-description">Upload PDFs, Word docs, spreadsheets, or other document files</p>
+
+                    <div class="file-upload-section">
                       <input
-                        type="checkbox"
-                        v-model="agent.knowledgeSources.textContent"
-                        @change="handleInputChange"
+                        type="file"
+                        ref="workspaceFileInput"
+                        multiple
+                        accept=".pdf,.doc,.docx,.txt,.csv,.xlsx,.xls"
+                        @change="handleWorkspaceFileUpload"
+                        style="display: none"
                       />
-                      <span class="checkbox-text">Text Content</span>
-                    </label>
-                  </div>
-                  <div class="source-info">
-                    <span class="source-size">{{ availableKnowledge.textContent.size }}</span>
+                      <button class="btn-secondary" @click="$refs.workspaceFileInput.click()">
+                        Choose Files
+                      </button>
+                      <span class="upload-hint">PDF, Word, Excel, TXT (max 10MB each)</span>
+                    </div>
+
+                    <div v-if="agent.knowledgeSources.documents && agent.knowledgeSources.documents.length > 0" class="uploaded-files-list">
+                      <div v-for="file in agent.knowledgeSources.documents" :key="file.id" class="file-item">
+                        <div class="file-info">
+                          <strong>{{ file.name }}</strong>
+                          <span class="file-size">{{ formatFileSize(file.size) }}</span>
+                        </div>
+                        <button class="btn-remove-small" @click="removeWorkspaceFile(file.id)">Remove</button>
+                      </div>
+                    </div>
+
+                    <div v-else class="empty-state">
+                      <p>No documents uploaded yet</p>
+                    </div>
                   </div>
                 </div>
 
-                <!-- Documents -->
-                <div v-if="availableKnowledge.documents.length > 0" class="knowledge-source-item">
-                  <div class="source-checkbox">
-                    <label class="checkbox-label">
+                <!-- Conversations Accordion Item -->
+                <div class="accordion-item">
+                  <div class="accordion-header" @click="knowledgeTab = knowledgeTab === 'conversations' ? '' : 'conversations'">
+                    <div class="accordion-title">
+                      <span>Conversations</span>
+                      <span class="accordion-count" v-if="agent.knowledgeSources.conversations && agent.knowledgeSources.conversations.length > 0">
+                        ({{ agent.knowledgeSources.conversations.length }})
+                      </span>
+                    </div>
+                    <span class="accordion-icon">{{ knowledgeTab === 'conversations' ? '−' : '+' }}</span>
+                  </div>
+                  <div v-if="knowledgeTab === 'conversations'" class="accordion-content">
+                    <p class="tab-description">Import past conversations to train your agent (CSV or JSON format)</p>
+
+                    <div class="file-upload-section">
                       <input
-                        type="checkbox"
-                        v-model="agent.knowledgeSources.documents"
-                        @change="handleInputChange"
+                        type="file"
+                        ref="conversationInput"
+                        multiple
+                        accept=".csv,.json"
+                        @change="handleConversationUploadWorkspace"
+                        style="display: none"
                       />
-                      <span class="checkbox-text">Documents</span>
-                    </label>
-                  </div>
-                  <div class="source-info">
-                    <span class="source-count">{{ availableKnowledge.documents.length }} {{ availableKnowledge.documents.length === 1 ? 'file' : 'files' }}</span>
+                      <button class="btn-secondary" @click="$refs.conversationInput.click()">
+                        Upload Conversations
+                      </button>
+                      <span class="upload-hint">CSV or JSON format (max 5MB each)</span>
+                    </div>
+
+                    <div v-if="agent.knowledgeSources.conversations && agent.knowledgeSources.conversations.length > 0" class="conversation-files-list">
+                      <div v-for="conv in agent.knowledgeSources.conversations" :key="conv.id" class="conversation-item">
+                        <div class="conversation-info">
+                          <strong>{{ conv.name }}</strong>
+                          <span class="conversation-count">{{ conv.conversationCount }} conversations</span>
+                        </div>
+                        <button class="btn-remove-small" @click="removeConversationWorkspace(conv.id)">Remove</button>
+                      </div>
+                    </div>
+
+                    <div v-else class="empty-state">
+                      <p>No conversations imported yet</p>
+                    </div>
                   </div>
                 </div>
 
-                <!-- Websites -->
-                <div v-if="availableKnowledge.websites.length > 0" class="knowledge-source-item">
-                  <div class="source-checkbox">
-                    <label class="checkbox-label">
+                <!-- Snippets Accordion Item -->
+                <div class="accordion-item">
+                  <div class="accordion-header" @click="knowledgeTab = knowledgeTab === 'text' ? '' : 'text'">
+                    <div class="accordion-title">
+                      <span>Snippets</span>
+                      <span class="accordion-count" v-if="agent.knowledgeSources.textSnippets && agent.knowledgeSources.textSnippets.length > 0">
+                        ({{ agent.knowledgeSources.textSnippets.length }})
+                      </span>
+                    </div>
+                    <span class="accordion-icon">{{ knowledgeTab === 'text' ? '−' : '+' }}</span>
+                  </div>
+                  <div v-if="knowledgeTab === 'text'" class="accordion-content">
+                    <p class="tab-description">Add text snippets, FAQs, policies, or any text-based information</p>
+
+                    <div class="add-snippet-section">
+                      <textarea
+                        v-model="newSnippetText"
+                        placeholder="Paste your text content here..."
+                        rows="6"
+                        class="input-field"
+                      ></textarea>
                       <input
-                        type="checkbox"
-                        v-model="agent.knowledgeSources.websites"
-                        @change="handleInputChange"
+                        v-model="newSnippetTitle"
+                        type="text"
+                        placeholder="Title (optional)"
+                        class="input-field"
+                        style="margin-top: 12px"
                       />
-                      <span class="checkbox-text">Website Content</span>
-                    </label>
-                  </div>
-                  <div class="source-info">
-                    <span class="source-count">{{ availableKnowledge.websites.length }} {{ availableKnowledge.websites.length === 1 ? 'site' : 'sites' }}</span>
+                      <button class="btn-secondary" @click="addTextSnippetWorkspace" :disabled="!newSnippetText.trim()" style="margin-top: 12px">
+                        Add Snippet
+                      </button>
+                    </div>
+
+                    <div v-if="agent.knowledgeSources.textSnippets && agent.knowledgeSources.textSnippets.length > 0" class="snippets-list">
+                      <div v-for="snippet in agent.knowledgeSources.textSnippets" :key="snippet.id" class="snippet-item">
+                        <div class="snippet-info">
+                          <strong>{{ snippet.title || 'Text snippet' }}</strong>
+                          <p class="snippet-preview">{{ snippet.content.substring(0, 100) }}{{ snippet.content.length > 100 ? '...' : '' }}</p>
+                        </div>
+                        <button class="btn-remove-small" @click="removeSnippetWorkspace(snippet.id)">Remove</button>
+                      </div>
+                    </div>
+
+                    <div v-else class="empty-state">
+                      <p>No text snippets added yet</p>
+                    </div>
                   </div>
                 </div>
 
-                <!-- Conversations -->
-                <div v-if="availableKnowledge.conversations.enabled" class="knowledge-source-item">
-                  <div class="source-checkbox">
-                    <label class="checkbox-label">
+                <!-- Websites Accordion Item -->
+                <div class="accordion-item">
+                  <div class="accordion-header" @click="knowledgeTab = knowledgeTab === 'websites' ? '' : 'websites'">
+                    <div class="accordion-title">
+                      <span>Websites</span>
+                      <span class="accordion-count" v-if="agent.knowledgeSources.websites && agent.knowledgeSources.websites.length > 0">
+                        ({{ agent.knowledgeSources.websites.length }})
+                      </span>
+                    </div>
+                    <span class="accordion-icon">{{ knowledgeTab === 'websites' ? '−' : '+' }}</span>
+                  </div>
+                  <div v-if="knowledgeTab === 'websites'" class="accordion-content">
+                    <p class="tab-description">Add website URLs to crawl and extract content from</p>
+
+                    <div class="add-website-section">
                       <input
-                        type="checkbox"
-                        v-model="agent.knowledgeSources.conversations"
-                        @change="handleInputChange"
+                        v-model="newWebsiteUrl"
+                        type="url"
+                        placeholder="https://example.com"
+                        class="input-field"
                       />
-                      <span class="checkbox-text">Conversation Insights</span>
-                    </label>
-                  </div>
-                  <div class="source-info">
-                    <span class="source-count">{{ availableKnowledge.conversations.count }} conversations</span>
+                      <label class="checkbox-label" style="margin-top: 12px">
+                        <input type="checkbox" v-model="crawlSubpagesWorkspace" />
+                        <span>Crawl subpages</span>
+                      </label>
+                      <button class="btn-secondary" @click="addWebsiteWorkspace" :disabled="!newWebsiteUrl.trim()" style="margin-top: 12px">
+                        Add Website
+                      </button>
+                    </div>
+
+                    <div v-if="agent.knowledgeSources.websites && agent.knowledgeSources.websites.length > 0" class="websites-list">
+                      <div v-for="site in agent.knowledgeSources.websites" :key="site.id" class="website-item">
+                        <div class="website-info">
+                          <strong>{{ site.url }}</strong>
+                          <span class="website-pages">{{ site.pageCount }} {{ site.pageCount === 1 ? 'page' : 'pages' }}</span>
+                        </div>
+                        <button class="btn-remove-small" @click="removeWebsiteWorkspace(site.id)">Remove</button>
+                      </div>
+                    </div>
+
+                    <div v-else class="empty-state">
+                      <p>No websites added yet</p>
+                    </div>
                   </div>
                 </div>
 
-                <!-- Empty State -->
-                <div v-if="!hasAnyKnowledge" class="knowledge-empty-state">
-                  <p>No knowledge sources available yet.</p>
-                  <router-link to="/knowledge-v2" class="link">Add knowledge sources →</router-link>
-                </div>
               </div>
             </div>
 
@@ -1494,6 +1654,30 @@ const wizardKnowledgeTab = ref('text')
 const wizardWebsiteUrl = ref('')
 const wizardWebsites = ref([])
 
+// Workspace Knowledge Management State
+const knowledgeTab = ref('integrations')
+const newSnippetText = ref('')
+const newSnippetTitle = ref('')
+const newWebsiteUrl = ref('')
+const crawlSubpagesWorkspace = ref(true)
+const workspaceFileInput = ref(null)
+const conversationInput = ref(null)
+
+const availableIntegrationPlatforms = ref([
+  { id: 'notion', name: 'Notion', status: 'Available' },
+  { id: 'confluence', name: 'Confluence', status: 'Available' },
+  { id: 'google-drive', name: 'Google Drive', status: 'Available' },
+  { id: 'slack', name: 'Slack', status: 'Available' },
+  { id: 'zendesk', name: 'Zendesk', status: 'Available' },
+  { id: 'salesforce', name: 'Salesforce', status: 'Available' },
+  { id: 'sharepoint', name: 'SharePoint', status: 'Available' },
+  { id: 'dropbox', name: 'Dropbox', status: 'Available' },
+  { id: 'github', name: 'GitHub', status: 'Available' },
+  { id: 'intercom', name: 'Intercom', status: 'Available' },
+  { id: 'freshdesk', name: 'Freshdesk', status: 'Available' },
+  { id: 'jira', name: 'Jira', status: 'Available' }
+])
+
 // Wizard Testing State
 const showInstructions = ref(false)
 const testMessages = ref([])
@@ -1841,14 +2025,23 @@ function loadAgent() {
     if (!agent.value.instructions) agent.value.instructions = ''
     if (!agent.value.status) agent.value.status = 'draft'
 
-    // Initialize knowledge sources selection (all enabled by default)
+    // Initialize knowledge sources with proper structure
     if (!agent.value.knowledgeSources) {
       agent.value.knowledgeSources = {
-        textContent: true,
-        documents: true,
-        websites: true,
-        conversations: true
+        textContent: '',
+        textSnippets: [],
+        documents: [],
+        websites: [],
+        integrations: [],
+        conversations: []
       }
+    } else {
+      // Ensure all arrays exist even if knowledgeSources was partially set
+      if (!agent.value.knowledgeSources.textSnippets) agent.value.knowledgeSources.textSnippets = []
+      if (!agent.value.knowledgeSources.documents) agent.value.knowledgeSources.documents = []
+      if (!agent.value.knowledgeSources.websites) agent.value.knowledgeSources.websites = []
+      if (!agent.value.knowledgeSources.integrations) agent.value.knowledgeSources.integrations = []
+      if (!agent.value.knowledgeSources.conversations) agent.value.knowledgeSources.conversations = []
     }
 
     // Enable wizard mode for new agents (only if not already completed)
@@ -2636,6 +2829,173 @@ function toggleWizardMode() {
     wizardCompleted.value = false
     wizardStep.value = 1
   }
+}
+
+// Wizard Knowledge Functions
+function connectIntegrationWizard(integrationId) {
+  const platform = availableIntegrationPlatforms.value.find(p => p.id === integrationId)
+  if (!platform) return
+  alert(`${platform.name} integration will be available after completing the wizard. You can connect it from the Knowledge Base section.`)
+}
+
+// Workspace Knowledge Management Functions
+function connectIntegrationWorkspace(integrationId) {
+  const platform = availableIntegrationPlatforms.value.find(p => p.id === integrationId)
+  if (!platform) return
+
+  alert(`Connecting to ${platform.name}... (OAuth flow would happen here)`)
+
+  if (!agent.value.knowledgeSources.integrations) {
+    agent.value.knowledgeSources.integrations = []
+  }
+
+  const connected = {
+    id: Date.now(),
+    integrationId: platform.id,
+    name: platform.name,
+    status: 'Connected',
+    itemCount: Math.floor(Math.random() * 50) + 10
+  }
+
+  agent.value.knowledgeSources.integrations.push(connected)
+  handleInputChange()
+}
+
+function disconnectIntegration(integrationId) {
+  if (!agent.value.knowledgeSources.integrations) return
+  agent.value.knowledgeSources.integrations = agent.value.knowledgeSources.integrations.filter(i => i.id !== integrationId)
+  handleInputChange()
+}
+
+function handleWorkspaceFileUpload(event) {
+  const files = Array.from(event.target.files)
+
+  if (!agent.value.knowledgeSources.documents) {
+    agent.value.knowledgeSources.documents = []
+  }
+
+  files.forEach(file => {
+    if (file.size > 10 * 1024 * 1024) {
+      alert(`File ${file.name} is too large (max 10MB)`)
+      return
+    }
+
+    const newFile = {
+      id: Date.now() + Math.random(),
+      name: file.name,
+      size: file.size,
+      status: 'ready'
+    }
+
+    agent.value.knowledgeSources.documents.push(newFile)
+  })
+
+  event.target.value = ''
+  handleInputChange()
+}
+
+function removeWorkspaceFile(fileId) {
+  if (!agent.value.knowledgeSources.documents) return
+  agent.value.knowledgeSources.documents = agent.value.knowledgeSources.documents.filter(f => f.id !== fileId)
+  handleInputChange()
+}
+
+function handleConversationUploadWorkspace(event) {
+  const files = Array.from(event.target.files)
+
+  if (!agent.value.knowledgeSources.conversations) {
+    agent.value.knowledgeSources.conversations = []
+  }
+
+  files.forEach(file => {
+    if (!file.name.endsWith('.csv') && !file.name.endsWith('.json')) {
+      alert(`File ${file.name} must be CSV or JSON format`)
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert(`File ${file.name} is too large (max 5MB)`)
+      return
+    }
+
+    const newConv = {
+      id: Date.now() + Math.random(),
+      name: file.name,
+      size: file.size,
+      status: 'ready',
+      conversationCount: Math.floor(Math.random() * 200) + 50
+    }
+
+    agent.value.knowledgeSources.conversations.push(newConv)
+  })
+
+  event.target.value = ''
+  handleInputChange()
+}
+
+function removeConversationWorkspace(convId) {
+  if (!agent.value.knowledgeSources.conversations) return
+  agent.value.knowledgeSources.conversations = agent.value.knowledgeSources.conversations.filter(c => c.id !== convId)
+  handleInputChange()
+}
+
+function addTextSnippetWorkspace() {
+  if (!newSnippetText.value.trim()) return
+
+  if (!agent.value.knowledgeSources.textSnippets) {
+    agent.value.knowledgeSources.textSnippets = []
+  }
+
+  const snippet = {
+    id: Date.now(),
+    title: newSnippetTitle.value.trim() || `Text snippet ${agent.value.knowledgeSources.textSnippets.length + 1}`,
+    content: newSnippetText.value.trim()
+  }
+
+  agent.value.knowledgeSources.textSnippets.push(snippet)
+  newSnippetText.value = ''
+  newSnippetTitle.value = ''
+  handleInputChange()
+}
+
+function removeSnippetWorkspace(snippetId) {
+  if (!agent.value.knowledgeSources.textSnippets) return
+  agent.value.knowledgeSources.textSnippets = agent.value.knowledgeSources.textSnippets.filter(s => s.id !== snippetId)
+  handleInputChange()
+}
+
+function addWebsiteWorkspace() {
+  if (!newWebsiteUrl.value.trim()) return
+
+  if (!agent.value.knowledgeSources.websites) {
+    agent.value.knowledgeSources.websites = []
+  }
+
+  const site = {
+    id: Date.now(),
+    url: newWebsiteUrl.value.trim(),
+    status: 'ready',
+    pageCount: crawlSubpagesWorkspace.value ? Math.floor(Math.random() * 40) + 10 : 1
+  }
+
+  agent.value.knowledgeSources.websites.push(site)
+  newWebsiteUrl.value = ''
+  crawlSubpagesWorkspace.value = true
+  handleInputChange()
+}
+
+function removeWebsiteWorkspace(siteId) {
+  if (!agent.value.knowledgeSources.websites) return
+  agent.value.knowledgeSources.websites = agent.value.knowledgeSources.websites.filter(s => s.id !== siteId)
+  handleInputChange()
+}
+
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 Bytes'
+  const k = 1024
+  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
 }
 
 function toggleSkill(skillName) {
@@ -6453,39 +6813,208 @@ textarea.input-field {
 }
 
 /* Knowledge Tabs */
-.knowledge-tabs {
+/* Knowledge Accordion */
+.knowledge-accordion {
   display: flex;
+  flex-direction: column;
   gap: 8px;
-  margin-bottom: 24px;
-  border-bottom: 2px solid #e0e0e0;
 }
 
-.knowledge-tab {
-  padding: 12px 20px;
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-  font-size: 14px;
+.accordion-item {
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.accordion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  cursor: pointer;
+  transition: background 0.2s;
+  user-select: none;
+}
+
+.accordion-header:hover {
+  background: #f9f9f9;
+}
+
+.accordion-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #000;
+}
+
+.accordion-count {
+  font-size: 13px;
   font-weight: 500;
   color: #666;
+}
+
+.accordion-icon {
+  font-size: 20px;
+  font-weight: 300;
+  color: #666;
+  line-height: 1;
+}
+
+.accordion-content {
+  padding: 0 20px 20px 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tab-description {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 24px;
+}
+
+/* Integrations */
+.connected-integrations {
+  margin-bottom: 32px;
+}
+
+.connected-integrations h4,
+.knowledge-tab-content h4 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+  color: #000;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.integrations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.integration-card {
+  padding: 20px;
+  background: #fff;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  text-align: center;
   cursor: pointer;
   transition: all 0.2s;
 }
 
-.knowledge-tab:hover {
+.integration-card:hover {
+  border-color: #000;
+  background: #fafafa;
+}
+
+.integration-card strong {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 8px;
   color: #000;
+}
+
+.integration-status {
+  font-size: 12px;
+  color: #666;
+}
+
+.integration-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
   background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  margin-bottom: 8px;
 }
 
-.knowledge-tab.active {
+.integration-info strong {
+  display: block;
+  font-size: 14px;
   color: #000;
-  border-bottom-color: #000;
-  font-weight: 600;
+  margin-bottom: 4px;
 }
 
-.knowledge-tab-content {
-  animation: fadeIn 0.3s ease;
+.integration-meta {
+  font-size: 12px;
+  color: #666;
+}
+
+/* File Upload Sections */
+.file-upload-section,
+.add-snippet-section,
+.add-website-section {
+  margin-bottom: 24px;
+}
+
+.uploaded-files-list,
+.conversation-files-list,
+.snippets-list,
+.websites-list {
+  margin-top: 16px;
+}
+
+.file-item,
+.conversation-item,
+.snippet-item,
+.website-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.file-info strong,
+.conversation-info strong,
+.snippet-info strong,
+.website-info strong {
+  display: block;
+  font-size: 14px;
+  color: #000;
+  margin-bottom: 4px;
+}
+
+.file-size,
+.conversation-count,
+.website-pages {
+  font-size: 12px;
+  color: #666;
+}
+
+.snippet-preview {
+  font-size: 12px;
+  color: #666;
+  margin: 4px 0 0 0;
+}
+
+.empty-state {
+  padding: 40px;
+  text-align: center;
+  color: #999;
+  font-size: 14px;
+  background: #fafafa;
+  border-radius: 6px;
 }
 
 /* Upload Area */
@@ -6585,6 +7114,24 @@ textarea.input-field {
 }
 
 .btn-remove:hover {
+  background: #ff4444;
+  border-color: #ff4444;
+  color: #fff;
+}
+
+.btn-remove-small {
+  padding: 6px 12px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.btn-remove-small:hover {
   background: #ff4444;
   border-color: #ff4444;
   color: #fff;

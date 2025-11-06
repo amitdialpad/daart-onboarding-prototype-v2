@@ -392,9 +392,9 @@
                   </div>
                 </div>
 
-                <!-- Text Snippets -->
+                <!-- Snippets -->
                 <div v-if="textSnippets.length > 0" class="knowledge-group">
-                  <p class="knowledge-group-label">Text Snippets</p>
+                  <p class="knowledge-group-label">Snippets</p>
                   <div v-for="snippet in textSnippets" :key="snippet.id" class="knowledge-item">
                     <span class="knowledge-name">{{ snippet.title }}</span>
                     <button class="btn-remove-small" @click="removeSnippet(snippet.id)">Remove</button>
@@ -1569,6 +1569,16 @@ function executeNextPhase() {
 }
 
 function createAgentFromPlan() {
+  // Structure knowledge sources properly for workspace
+  const knowledgeSources = {
+    textContent: '',
+    textSnippets: pathTaken.value === 'knowledge' ? textSnippets.value : [],
+    documents: pathTaken.value === 'knowledge' ? uploadedFiles.value : [],
+    websites: pathTaken.value === 'knowledge' ? websites.value : [],
+    integrations: pathTaken.value === 'knowledge' ? connectedIntegrations.value : [],
+    conversations: pathTaken.value === 'knowledge' ? conversationFiles.value : []
+  }
+
   const newAgent = {
     id: Date.now().toString(),
     name: generatedPlan.value.agentName,
@@ -1581,6 +1591,7 @@ function createAgentFromPlan() {
     knowledgeBase: pathTaken.value === 'knowledge' ? `${knowledgeItems.value.length} sources added` : 'Ready to add knowledge sources',
     skills: [],
     knowledge: pathTaken.value === 'knowledge' ? knowledgeItems.value : [],
+    knowledgeSources: knowledgeSources,
     settings: generatedPlan.value.settings,
     onboardingPlan: {
       userIntent: userIntent.value,
@@ -1902,7 +1913,8 @@ function goToWorkspace() {
   color: #000;
 }
 
-.knowledge-container .subtitle {
+.knowledge-container .subtitle,
+.questions-container .subtitle {
   text-align: left;
 }
 

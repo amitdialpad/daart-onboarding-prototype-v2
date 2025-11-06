@@ -11,6 +11,13 @@
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-content">
+          <div class="stat-value">{{ integrationCount }}</div>
+          <div class="stat-label">Integrations</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-content">
           <div class="stat-value">{{ documentCount }}</div>
           <div class="stat-label">Documents</div>
         </div>
@@ -18,8 +25,15 @@
 
       <div class="stat-card">
         <div class="stat-content">
-          <div class="stat-value">{{ textContentSize }}</div>
-          <div class="stat-label">Text Content</div>
+          <div class="stat-value">{{ conversationCount }}</div>
+          <div class="stat-label">Conversations</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-content">
+          <div class="stat-value">{{ textSnippetCount }}</div>
+          <div class="stat-label">Snippets</div>
         </div>
       </div>
 
@@ -27,13 +41,6 @@
         <div class="stat-content">
           <div class="stat-value">{{ websiteCount }}</div>
           <div class="stat-label">Website Pages</div>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-content">
-          <div class="stat-value">{{ conversationCount }}</div>
-          <div class="stat-label">Conversations</div>
         </div>
       </div>
     </div>
@@ -49,6 +56,36 @@
 
     <!-- Source Sections -->
     <div class="sources-container">
+      <!-- Integrations Section -->
+      <div class="source-section">
+        <div class="section-header">
+          <div class="section-title">
+            <h2>Integrations</h2>
+            <span class="section-count">{{ integrationCount }} {{ integrationCount === 1 ? 'integration' : 'integrations' }}</span>
+          </div>
+          <router-link to="/knowledge-v2/integrations" class="btn-secondary">Manage Integrations →</router-link>
+        </div>
+        <p class="section-description">Connected platforms like Notion, Confluence, Google Drive, Slack, etc.</p>
+
+        <div v-if="integrations.length === 0" class="empty-state">
+          <p>No integrations connected yet</p>
+          <router-link to="/knowledge-v2/integrations" class="link">Connect your first integration →</router-link>
+        </div>
+
+        <div v-else class="source-list">
+          <div v-for="integration in integrations.slice(0, 3)" :key="integration.id" class="source-item">
+            <div class="item-info">
+              <div class="item-name">{{ integration.name }}</div>
+              <div class="item-meta">{{ integration.itemCount }} items • Connected {{ integration.connectedAt || 'recently' }}</div>
+            </div>
+            <div class="item-status synced">Connected</div>
+          </div>
+          <div v-if="integrations.length > 3" class="show-more">
+            <router-link to="/knowledge-v2/integrations">View all {{ integrations.length }} integrations →</router-link>
+          </div>
+        </div>
+      </div>
+
       <!-- Documents Section -->
       <div class="source-section">
         <div class="section-header">
@@ -79,25 +116,33 @@
         </div>
       </div>
 
-      <!-- Text Content Section -->
+      <!-- Snippets Section -->
       <div class="source-section">
         <div class="section-header">
           <div class="section-title">
-            <h2>Text Content</h2>
-            <span class="section-count">{{ textContentSize }}</span>
+            <h2>Snippets</h2>
+            <span class="section-count">{{ textSnippetCount }} {{ textSnippetCount === 1 ? 'snippet' : 'snippets' }}</span>
           </div>
-          <router-link to="/knowledge-v2/text-content" class="btn-secondary">Edit Content →</router-link>
+          <router-link to="/knowledge-v2/text-content" class="btn-secondary">Manage Snippets →</router-link>
         </div>
         <p class="section-description">Manually entered policies, FAQs, and product information</p>
 
-        <div v-if="!textContent || textContent.length === 0" class="empty-state">
-          <p>No text content added yet</p>
-          <router-link to="/knowledge-v2/text-content" class="link">Add text content →</router-link>
+        <div v-if="textSnippets.length === 0" class="empty-state">
+          <p>No text snippets added yet</p>
+          <router-link to="/knowledge-v2/text-content" class="link">Add text snippet →</router-link>
         </div>
 
-        <div v-else class="text-preview">
-          <pre>{{ textContentPreview }}</pre>
-          <router-link to="/knowledge-v2/text-content" class="preview-link">View full content →</router-link>
+        <div v-else class="source-list">
+          <div v-for="snippet in textSnippets.slice(0, 3)" :key="snippet.id" class="source-item">
+            <div class="item-info">
+              <div class="item-name">{{ snippet.title || 'Text snippet' }}</div>
+              <div class="item-meta">{{ snippet.content.substring(0, 60) }}{{ snippet.content.length > 60 ? '...' : '' }}</div>
+            </div>
+            <div class="item-status ready">Ready</div>
+          </div>
+          <div v-if="textSnippets.length > 3" class="show-more">
+            <router-link to="/knowledge-v2/text-content">View all {{ textSnippets.length }} snippets →</router-link>
+          </div>
         </div>
       </div>
 
@@ -160,10 +205,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 
+const integrations = ref([])
 const documents = ref([])
-const textContent = ref('')
+const conversationFiles = ref([])
+const textSnippets = ref([])
 const websites = ref([])
-const conversationCount = ref(0)
 const conversationsEnabled = ref(true)
 
 const agentCount = computed(() => {
@@ -171,24 +217,16 @@ const agentCount = computed(() => {
   return agents.length
 })
 
+const integrationCount = computed(() => integrations.value.length)
+
 const documentCount = computed(() => documents.value.length)
 
-const textContentSize = computed(() => {
-  if (!textContent.value) return 'No content'
-  const length = textContent.value.length
-  if (length === 0) return 'No content'
-  if (length < 1000) return `${length} characters`
-  if (length < 1000000) return `${(length / 1000).toFixed(1)}K characters`
-  return `${(length / 1000000).toFixed(1)}M characters`
-})
+const conversationCount = computed(() => conversationFiles.value.length)
 
-const textContentPreview = computed(() => {
-  if (!textContent.value) return ''
-  return textContent.value.slice(0, 300) + (textContent.value.length > 300 ? '...' : '')
-})
+const textSnippetCount = computed(() => textSnippets.value.length)
 
 const websiteCount = computed(() => {
-  return websites.value.reduce((total, site) => total + (site.pages || 0), 0)
+  return websites.value.reduce((total, site) => total + (site.pageCount || site.pages || 0), 0)
 })
 
 onMounted(() => {
@@ -196,20 +234,42 @@ onMounted(() => {
 })
 
 function loadKnowledgeSources() {
-  // Load from localStorage
-  const sources = JSON.parse(localStorage.getItem('daart-knowledge-sources') || '{}')
+  // Load from localStorage - check all agents for their knowledge sources
+  const agents = JSON.parse(localStorage.getItem('daart-agents') || '[]')
 
-  documents.value = sources.documents || []
-  websites.value = sources.websites || []
-  conversationsEnabled.value = sources.conversations?.enabled !== false
-  conversationCount.value = sources.conversations?.count || 0
+  // Aggregate knowledge from all agents
+  const allIntegrations = []
+  const allDocuments = []
+  const allConversations = []
+  const allSnippets = []
+  const allWebsites = []
 
-  // Load text content from org knowledge
-  const orgKnowledge = localStorage.getItem('daart-org-knowledge')
-  if (orgKnowledge) {
-    const parsed = JSON.parse(orgKnowledge)
-    textContent.value = parsed.content || ''
-  }
+  agents.forEach(agent => {
+    if (agent.knowledgeSources) {
+      if (agent.knowledgeSources.integrations) {
+        allIntegrations.push(...agent.knowledgeSources.integrations)
+      }
+      if (agent.knowledgeSources.documents) {
+        allDocuments.push(...agent.knowledgeSources.documents)
+      }
+      if (agent.knowledgeSources.conversations) {
+        allConversations.push(...agent.knowledgeSources.conversations)
+      }
+      if (agent.knowledgeSources.textSnippets) {
+        allSnippets.push(...agent.knowledgeSources.textSnippets)
+      }
+      if (agent.knowledgeSources.websites) {
+        allWebsites.push(...agent.knowledgeSources.websites)
+      }
+    }
+  })
+
+  // Deduplicate by id
+  integrations.value = Array.from(new Map(allIntegrations.map(item => [item.id, item])).values())
+  documents.value = Array.from(new Map(allDocuments.map(item => [item.id, item])).values())
+  conversationFiles.value = Array.from(new Map(allConversations.map(item => [item.id, item])).values())
+  textSnippets.value = Array.from(new Map(allSnippets.map(item => [item.id, item])).values())
+  websites.value = Array.from(new Map(allWebsites.map(item => [item.id, item])).values())
 }
 </script>
 
