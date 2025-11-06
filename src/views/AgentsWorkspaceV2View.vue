@@ -154,47 +154,52 @@
                       </div>
                     </div>
 
+                    <!-- Scrollable Content Area -->
                     <div class="test-chat-container" ref="testChatContainer">
                       <div v-if="testMessages.length === 0" class="test-welcome">
                         <p>👋 Test your agent by sending a message</p>
                       </div>
-                      <div v-for="(msg, index) in testMessages" :key="index" class="test-message" :class="msg.role">
-                        <div class="message-bubble">{{ msg.content }}</div>
-                      </div>
-                      <div v-if="testIsThinking" class="test-message assistant">
-                        <div class="message-bubble thinking">
-                          <span class="typing-dot"></span>
-                          <span class="typing-dot"></span>
-                          <span class="typing-dot"></span>
+                      <div v-else class="test-messages">
+                        <div v-for="(msg, index) in testMessages" :key="index" class="test-message" :class="msg.role">
+                          <div class="message-bubble">{{ msg.content }}</div>
                         </div>
+                        <div v-if="testIsThinking" class="test-message assistant">
+                          <div class="message-bubble thinking">
+                            <span class="typing-dot"></span>
+                            <span class="typing-dot"></span>
+                            <span class="typing-dot"></span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Suggested Prompts (Always visible) -->
+                      <div class="test-suggestions">
+                        <p class="suggestions-label">{{ testMessages.length === 0 ? 'Try asking:' : 'You can also ask:' }}</p>
+                        <button
+                          v-for="(suggestion, index) in dynamicTestSuggestions"
+                          :key="index"
+                          class="suggestion-button"
+                          @click="askSuggestion(suggestion)"
+                          :disabled="testIsThinking">
+                          {{ suggestion }}
+                        </button>
                       </div>
                     </div>
 
+                    <!-- Input (Fixed at bottom) -->
                     <div class="test-input-container">
                       <input
                         v-model="testInput"
                         @keyup.enter="sendTestMessage"
                         type="text"
                         class="test-input"
-                        placeholder="Type your message..."
+                        placeholder="Ask me anything..."
                         :disabled="testIsThinking">
                       <button
                         @click="sendTestMessage"
                         class="btn-send"
                         :disabled="!testInput.trim() || testIsThinking">
                         Send
-                      </button>
-                    </div>
-
-                    <div class="test-suggestions">
-                      <p class="suggestions-label">Try asking:</p>
-                      <button
-                        v-for="(suggestion, index) in testSuggestions"
-                        :key="index"
-                        class="suggestion-button"
-                        @click="testInput = suggestion"
-                        :disabled="testIsThinking">
-                        {{ suggestion }}
                       </button>
                     </div>
                   </div>
@@ -364,6 +369,29 @@ Policies:
               <div class="warning-content">
                 <strong>Editing Live Agent {{ agent.version || 'v1.0' }}</strong>
                 <p>Changes are auto-saved as a draft. Click "Publish Update" when ready to deploy changes to live users.</p>
+              </div>
+            </div>
+
+            <!-- COMPASS Validation Panel (shows on all sections) -->
+            <div v-if="validationMessages.length > 0" class="validation-panel">
+              <div class="validation-header" @click="validationExpanded = !validationExpanded">
+                <div class="validation-title">
+                  <span class="validation-icon">⚠️</span>
+                  <span>COMPASS Validation ({{ validationMessages.length }} {{ validationMessages.length === 1 ? 'issue' : 'issues' }})</span>
+                </div>
+                <button class="validation-toggle">{{ validationExpanded ? '−' : '+' }}</button>
+              </div>
+              <div v-if="validationExpanded" class="validation-content">
+                <div v-for="msg in validationMessages"
+                     :key="msg.id"
+                     class="validation-message"
+                     :class="msg.severity">
+                  <div class="validation-msg-header">
+                    <span class="validation-severity">{{ msg.severity.toUpperCase() }}</span>
+                    <span class="validation-field">{{ msg.field }}</span>
+                  </div>
+                  <div class="validation-msg-text">{{ msg.message }}</div>
+                </div>
               </div>
             </div>
 
@@ -1474,6 +1502,71 @@ const testIsThinking = ref(false)
 const hasTested = ref(false)
 const testChatContainer = ref(null)
 
+// COMPASS Validation
+const validationExpanded = ref(true)
+
+const validationMessages = computed(() => {
+  if (!agent.value) return []
+
+  const messages = []
+  const agentData = agent.value
+
+  // Validate Agent Name
+  if (!agentData.name || agentData.name.trim().length === 0) {
+    messages.push({
+      id: 'name-empty',
+      severity: 'error',
+      field: 'Agent Name',
+      message: 'Agent name is required'
+    })
+  } else if (agentData.name.length < 3) {
+    messages.push({
+      id: 'name-short',
+      severity: 'warning',
+      field: 'Agent Name',
+      message: 'Agent name should be at least 3 characters long'
+    })
+  }
+
+  // Validate Instructions
+  if (!agentData.instructions || agentData.instructions.trim().length === 0) {
+    messages.push({
+      id: 'instructions-empty',
+      severity: 'error',
+      field: 'Behavior Instructions',
+      message: 'Instructions are required to guide agent behavior'
+    })
+  } else if (agentData.instructions.length < 50) {
+    messages.push({
+      id: 'instructions-short',
+      severity: 'warning',
+      field: 'Behavior Instructions',
+      message: 'More detailed instructions (50+ characters) lead to better agent performance'
+    })
+  }
+
+  // Validate Knowledge Base
+  const hasKnowledge = agentData.knowledgeSources && (
+    agentData.knowledgeSources.textContent ||
+    agentData.knowledgeSources.documents ||
+    agentData.knowledgeSources.websites
+  )
+  if (!hasKnowledge) {
+    messages.push({
+      id: 'knowledge-empty',
+      severity: 'warning',
+      field: 'Knowledge Base',
+      message: 'No knowledge sources configured. Agent may not have enough context to answer questions.'
+    })
+  }
+
+  // Skills validation removed per user request
+
+  // Test scenarios validation removed per user request
+
+  return messages
+})
+
 // Test suggestions based on problem type
 const testSuggestions = computed(() => {
   const suggestions = {
@@ -1485,6 +1578,79 @@ const testSuggestions = computed(() => {
     general: ["What are your hours?", "Where are you located?", "How can I contact you?"]
   }
   return suggestions[agent.value?.problemType] || ["What can you help me with?", "Tell me about your services", "How do I get started?"]
+})
+
+const dynamicTestSuggestions = computed(() => {
+  // Get all available suggestions for this agent type
+  const allSuggestions = {
+    support: [
+      "What are your hours?",
+      "How do I return an item?",
+      "I need help with my account",
+      "How do I contact support?",
+      "What's your refund policy?",
+      "Can I speak to a human?"
+    ],
+    sales: [
+      "Tell me about your products",
+      "What's your pricing?",
+      "Can I schedule a demo?",
+      "Do you offer discounts?",
+      "What's included in each plan?",
+      "Is there a free trial?"
+    ],
+    hr: [
+      "How do I request time off?",
+      "What are the benefits?",
+      "Where's the employee handbook?",
+      "What's the dress code?",
+      "Who do I contact for IT support?",
+      "What are the holidays?"
+    ],
+    orders: [
+      "Where's my order?",
+      "Track package #12345",
+      "How do I return something?",
+      "When will my order arrive?",
+      "Can I change my shipping address?",
+      "What if my item is damaged?"
+    ],
+    scheduling: [
+      "Book an appointment",
+      "What times are available?",
+      "Cancel my booking",
+      "Reschedule my appointment",
+      "How long is each appointment?",
+      "Do you have weekend availability?"
+    ],
+    general: [
+      "What are your hours?",
+      "Where are you located?",
+      "How can I contact you?",
+      "What services do you offer?",
+      "Tell me about your company",
+      "How do I get started?"
+    ]
+  }
+
+  const availableQuestions = allSuggestions[agent.value?.problemType] || allSuggestions.general
+
+  // Filter out questions that have already been asked
+  const askedQuestions = testMessages.value
+    .filter(msg => msg.role === 'user')
+    .map(msg => msg.content.toLowerCase().trim())
+
+  const unaskedQuestions = availableQuestions.filter(q => {
+    const qLower = q.toLowerCase()
+    return !askedQuestions.some(asked => {
+      const qWords = qLower.split(' ').filter(w => w.length > 3)
+      const askedWords = asked.split(' ').filter(w => w.length > 3)
+      const overlap = qWords.filter(w => askedWords.includes(w)).length
+      return overlap >= 2
+    })
+  })
+
+  return unaskedQuestions.slice(0, 3)
 })
 
 // Available skills for wizard
@@ -2239,6 +2405,11 @@ function sendTestMessage() {
       }
     }, 50)
   }, 1500)
+}
+
+function askSuggestion(suggestion) {
+  testInput.value = suggestion
+  sendTestMessage()
 }
 
 function resetTestChat() {
@@ -5911,6 +6082,120 @@ textarea.input-field {
   gap: 6px;
   width: fit-content;
   max-width: 100%;
+}
+
+/* COMPASS Validation Panel */
+.validation-panel {
+  margin-bottom: 24px;
+  border: 2px solid #ff8800;
+  background: #fff9f0;
+}
+
+.validation-header {
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  background: #fff4e5;
+  border-bottom: 1px solid #ffcc80;
+}
+
+.validation-header:hover {
+  background: #ffe8cc;
+}
+
+.validation-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.validation-icon {
+  font-size: 16px;
+}
+
+.validation-toggle {
+  width: 24px;
+  height: 24px;
+  border: 1px solid #ff8800;
+  background: #fff;
+  color: #ff8800;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.validation-content {
+  padding: 16px;
+}
+
+.validation-message {
+  padding: 12px;
+  margin-bottom: 8px;
+  border-left: 4px solid;
+  background: #fff;
+}
+
+.validation-message.error {
+  border-left-color: #ea4335;
+  background: #fce8e6;
+}
+
+.validation-message.warning {
+  border-left-color: #ff8800;
+  background: #fff4e5;
+}
+
+.validation-message.info {
+  border-left-color: #4285f4;
+  background: #f0f7ff;
+}
+
+.validation-msg-header {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 4px;
+  align-items: center;
+}
+
+.validation-severity {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+
+.validation-message.error .validation-severity {
+  background: #ea4335;
+  color: #fff;
+}
+
+.validation-message.warning .validation-severity {
+  background: #ff8800;
+  color: #fff;
+}
+
+.validation-message.info .validation-severity {
+  background: #4285f4;
+  color: #fff;
+}
+
+.validation-field {
+  font-weight: 600;
+  font-size: 12px;
+  color: #333;
+}
+
+.validation-msg-text {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #333;
 }
 
 .wizard-mode-prompt {
