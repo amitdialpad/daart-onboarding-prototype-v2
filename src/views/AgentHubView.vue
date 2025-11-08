@@ -230,11 +230,13 @@ function goToOnboarding(scenario) {
     localStorage.removeItem('daart-just-completed-onboarding')
     localStorage.removeItem('daart-selected-scenario')
 
-    // Reload to show empty state
-    // Preserve base path for GitHub Pages deployment
+    // Reload agents and update view to show empty state
+    console.log('[AgentHubView] Reloading page to show empty state')
+    loadAgents() // This will set agents.value to []
+
+    // Force a full page reload to ensure clean state
     const basePath = window.location.pathname.split('#')[0]
     const newUrl = window.location.origin + basePath + '#/home'
-    console.log('[AgentHubView] Navigating to:', newUrl)
     window.location.href = newUrl
   }
 }

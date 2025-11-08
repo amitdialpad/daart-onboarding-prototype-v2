@@ -248,6 +248,7 @@ const route = useRoute()
 const router = useRouter()
 
 const agent = ref({})
+const showReviewBeforeRepublish = ref(false)
 
 onMounted(() => {
   loadAgent()
