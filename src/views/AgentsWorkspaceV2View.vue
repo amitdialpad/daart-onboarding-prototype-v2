@@ -368,20 +368,23 @@ Policies:
             </div>
           </div>
 
-          <!-- EXPERT MODE: 3-column layout -->
+          <!-- EXPERT MODE: Horizontal tabs layout -->
           <template v-else>
-            <!-- Section Navigator (Left Column) -->
-            <div class="build-sections-nav">
-            <div v-for="section in buildSections"
-                 :key="section.id"
-                 class="section-nav-item"
-                 :class="{ active: activeBuildSection === section.id }"
-                 @click="scrollToBuildSection(section.id)">
-              {{ section.label }}
+            <!-- Horizontal Build Tabs -->
+            <div class="build-tabs-nav">
+              <div
+                v-for="section in buildSections"
+                :key="section.id"
+                class="build-tab-item"
+                :class="{ active: activeBuildSection === section.id }"
+                @click="activeBuildSection = section.id">
+                {{ section.label }}
+              </div>
             </div>
-          </div>
 
-          <!-- Main Content (Middle Column) -->
+          <!-- Build Content Container (2 columns: main + test panel) -->
+          <div class="build-content-wrapper">
+          <!-- Main Content -->
           <div class="build-main" ref="buildMainContent">
             <!-- Live Agent Warning Banner -->
             <div v-if="agent.status === 'live'" class="live-agent-warning">
@@ -415,14 +418,8 @@ Policies:
               </div>
             </div>
 
-            <!-- Wizard Mode Toggle (only show for draft agents who haven't completed onboarding) -->
-            <div v-if="agent.status === 'draft' && agent.needsWizard !== false" class="wizard-mode-prompt">
-              <span>Need help getting started?</span>
-              <button class="btn-link" @click="toggleWizardMode">Switch to Wizard Mode</button>
-            </div>
-
             <!-- Configuration Section -->
-            <div id="configuration" class="config-section build-section-anchor">
+            <div v-if="activeBuildSection === 'configuration'" id="configuration" class="config-section build-section-anchor">
               <h3>Configuration</h3>
 
               <div class="form-group">
@@ -443,12 +440,494 @@ Policies:
                   class="input-field"></textarea>
                 <div class="hint">Guide how your agent should respond to customers</div>
               </div>
+
+              <!-- Channels & Integrations -->
+              <div class="subsection">
+                <h4>Channels & Integrations</h4>
+                <p class="section-intro">Enable and configure where your agent is available</p>
+
+                <!-- Web Chat Channel -->
+                <div class="channel-block">
+                  <div class="channel-header">
+                    <div class="channel-info">
+                      <h4>Web Chat</h4>
+                      <p class="channel-description">Embedded chat widget on your website</p>
+                    </div>
+                    <label class="toggle-switch">
+                      <input type="checkbox" v-model="agent.channels.webChat.enabled" @change="handleInputChange">
+                      <span class="toggle-slider"></span>
+                    </label>
+                  </div>
+
+                  <div v-if="agent.channels.webChat.enabled" class="channel-config">
+                    <!-- Messages & Greetings -->
+                    <div class="collapsible-section">
+                      <div class="collapsible-header" @click="toggleConfigSection('chatMessages')">
+                        <span class="section-title">Messages & Greetings</span>
+                        <span class="chevron" :class="{ expanded: configSections.chatMessages }">›</span>
+                      </div>
+                      <div v-if="configSections.chatMessages" class="collapsible-content">
+                        <div class="form-group">
+                          <label>Welcome Message</label>
+                          <textarea
+                            v-model="agent.channels.webChat.welcomeMessage"
+                            @input="handleInputChange"
+                            rows="2"
+                            class="input-field"
+                            placeholder="Hi! How can I help you today?"></textarea>
+                          <div class="hint">First message when the chat widget opens</div>
+                        </div>
+
+                        <div class="form-group">
+                          <label>
+                            <input type="checkbox" v-model="agent.channels.webChat.enableProactive" @change="handleInputChange">
+                            Enable Proactive Greeting
+                          </label>
+                          <textarea
+                            v-if="agent.channels.webChat.enableProactive"
+                            v-model="agent.channels.webChat.proactiveMessage"
+                            @input="handleInputChange"
+                            rows="2"
+                            class="input-field"
+                            placeholder="👋 Need help? I'm here to assist!"></textarea>
+                          <div class="hint">Auto-popup message to engage visitors</div>
+                        </div>
+
+                        <div class="form-group">
+                          <label>Expected Response Time</label>
+                          <input
+                            v-model="agent.channels.webChat.responseTime"
+                            @input="handleInputChange"
+                            type="text"
+                            class="input-field"
+                            placeholder="Usually replies in 2 minutes">
+                          <div class="hint">Set customer expectations</div>
+                        </div>
+
+                        <div class="form-group">
+                          <label>
+                            <input type="checkbox" v-model="agent.channels.webChat.showTypingIndicator" @change="handleInputChange">
+                            Show Typing Indicator
+                          </label>
+                          <div class="hint">Show "..." when agent is typing</div>
+                        </div>
+
+                        <div class="form-group">
+                          <label>Away Message</label>
+                          <textarea
+                            v-model="agent.channels.webChat.awayMessage"
+                            @input="handleInputChange"
+                            rows="2"
+                            class="input-field"
+                            placeholder="Let me look that up for you..."></textarea>
+                          <div class="hint">Message shown when agent is processing</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Availability & Hours -->
+                    <div class="collapsible-section">
+                      <div class="collapsible-header" @click="toggleConfigSection('chatAvailability')">
+                        <span class="section-title">Availability & Hours</span>
+                        <span class="chevron" :class="{ expanded: configSections.chatAvailability }">›</span>
+                      </div>
+                      <div v-if="configSections.chatAvailability" class="collapsible-content">
+                        <div class="form-group">
+                          <label>Business Hours</label>
+                          <input
+                            v-model="agent.channels.webChat.businessHours"
+                            @input="handleInputChange"
+                            type="text"
+                            class="input-field"
+                            placeholder="Monday-Friday, 9 AM - 5 PM EST">
+                          <div class="hint">When is the agent available?</div>
+                        </div>
+
+                        <div class="form-group">
+                          <label>Offline Behavior</label>
+                          <select v-model="agent.channels.webChat.offlineBehavior" @change="handleInputChange" class="input-field">
+                            <option value="show-message">Show offline message</option>
+                            <option value="collect-email">Collect email for follow-up</option>
+                            <option value="always-on">Always available (24/7)</option>
+                          </select>
+                        </div>
+
+                        <div v-if="agent.channels.webChat.offlineBehavior !== 'always-on'" class="form-group">
+                          <label>Offline Message</label>
+                          <textarea
+                            v-model="agent.channels.webChat.offlineMessage"
+                            @input="handleInputChange"
+                            rows="2"
+                            class="input-field"
+                            placeholder="We're currently offline. Leave your email and we'll get back to you!"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                          <label>Auto-away Timeout (minutes)</label>
+                          <input
+                            v-model="agent.channels.webChat.autoAwayTimeout"
+                            @input="handleInputChange"
+                            type="number"
+                            class="input-field"
+                            placeholder="5">
+                          <div class="hint">Mark as away after inactivity</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Escalation & Handoff -->
+                    <div class="collapsible-section">
+                      <div class="collapsible-header" @click="toggleConfigSection('chatEscalation')">
+                        <span class="section-title">Escalation & Handoff</span>
+                        <span class="chevron" :class="{ expanded: configSections.chatEscalation }">›</span>
+                      </div>
+                      <div v-if="configSections.chatEscalation" class="collapsible-content">
+                        <div class="form-group">
+                          <label>Transfer Conditions</label>
+                          <textarea
+                            v-model="agent.channels.webChat.transferConditions"
+                            @input="handleInputChange"
+                            rows="3"
+                            class="input-field"
+                            placeholder="e.g., Transfer if customer asks for human agent, mentions refund, or expresses frustration"></textarea>
+                          <div class="hint">When should the agent transfer to a human?</div>
+                        </div>
+
+                        <div class="form-group">
+                          <label>Transfer Destination</label>
+                          <select v-model="agent.channels.webChat.transferDestination" @change="handleInputChange" class="input-field">
+                            <option value="">Select destination</option>
+                            <option value="support-queue">Support Queue</option>
+                            <option value="sales-queue">Sales Queue</option>
+                            <option value="technical-queue">Technical Queue</option>
+                            <option value="manager-queue">Manager Queue</option>
+                          </select>
+                        </div>
+
+                        <div class="form-group">
+                          <label>Handoff Message</label>
+                          <textarea
+                            v-model="agent.channels.webChat.handoffMessage"
+                            @input="handleInputChange"
+                            rows="2"
+                            class="input-field"
+                            placeholder="Let me connect you with a team member who can help..."></textarea>
+                          <div class="hint">What the user sees during transfer</div>
+                        </div>
+
+                        <div class="form-group">
+                          <label>Context to Transfer</label>
+                          <textarea
+                            v-model="agent.channels.webChat.contextToTransfer"
+                            @input="handleInputChange"
+                            rows="2"
+                            class="input-field"
+                            placeholder="Full conversation history, user info, detected intent"></textarea>
+                          <div class="hint">What information to pass to the human agent</div>
+                        </div>
+
+                        <div class="form-group">
+                          <label>
+                            <input type="checkbox" v-model="agent.channels.webChat.enableTranscript" @change="handleInputChange">
+                            Enable Email Transcript
+                          </label>
+                          <div class="hint">Send chat history to customer via email</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Widget Appearance -->
+                    <div class="collapsible-section">
+                      <div class="collapsible-header" @click="toggleConfigSection('chatAppearance')">
+                        <span class="section-title">Widget Appearance</span>
+                        <span class="chevron" :class="{ expanded: configSections.chatAppearance }">›</span>
+                      </div>
+                      <div v-if="configSections.chatAppearance" class="collapsible-content">
+                        <div class="form-group">
+                          <label>Primary Color</label>
+                          <div class="color-picker-group">
+                            <input
+                              v-model="agent.channels.webChat.primaryColor"
+                              @input="handleInputChange"
+                              type="color"
+                              class="color-input">
+                            <input
+                              v-model="agent.channels.webChat.primaryColor"
+                              @input="handleInputChange"
+                              type="text"
+                              class="input-field color-text"
+                              placeholder="#6366f1">
+                          </div>
+                          <div class="hint">Main color for the chat widget</div>
+                        </div>
+
+                        <div class="form-group">
+                          <label>Widget Position</label>
+                          <select v-model="agent.channels.webChat.widgetPosition" @change="handleInputChange" class="input-field">
+                            <option value="bottom-right">Bottom Right</option>
+                            <option value="bottom-left">Bottom Left</option>
+                            <option value="top-right">Top Right</option>
+                            <option value="top-left">Top Left</option>
+                          </select>
+                        </div>
+
+                        <div class="form-group">
+                          <label>Agent Display Name</label>
+                          <input
+                            v-model="agent.channels.webChat.displayName"
+                            @input="handleInputChange"
+                            type="text"
+                            class="input-field"
+                            placeholder="Support Assistant">
+                          <div class="hint">Name shown to customers in the chat widget</div>
+                        </div>
+
+                        <div class="form-group">
+                          <label>Widget Size</label>
+                          <select v-model="agent.channels.webChat.widgetSize" @change="handleInputChange" class="input-field">
+                            <option value="compact">Compact</option>
+                            <option value="standard">Standard</option>
+                            <option value="large">Large</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Voice/Phone Channel -->
+                <div class="channel-block">
+                  <div class="channel-header">
+                    <div class="channel-info">
+                      <h4>Voice (Phone Calls)</h4>
+                      <p class="channel-description">Inbound and outbound phone conversations</p>
+                    </div>
+                    <label class="toggle-switch">
+                      <input type="checkbox" v-model="agent.channels.voice.enabled" @change="handleInputChange">
+                      <span class="toggle-slider"></span>
+                    </label>
+                  </div>
+
+                  <div v-if="agent.channels.voice.enabled" class="channel-config">
+                    <div class="form-group">
+                      <label>Phone Number</label>
+                      <input
+                        v-model="agent.channels.voice.phoneNumber"
+                        @input="handleInputChange"
+                        type="text"
+                        class="input-field"
+                        placeholder="+1 (555) 000-0000">
+                      <div class="hint">Get a phone number for your agent</div>
+                    </div>
+
+                    <div class="form-group">
+                      <label>Voice Type</label>
+                      <select v-model="agent.channels.voice.voiceType" @change="handleInputChange" class="input-field">
+                        <option value="nova">Nova (Female, Conversational)</option>
+                        <option value="alloy">Alloy (Neutral, Professional)</option>
+                        <option value="echo">Echo (Male, Warm)</option>
+                        <option value="fable">Fable (Male, Expressive)</option>
+                        <option value="onyx">Onyx (Male, Deep)</option>
+                        <option value="shimmer">Shimmer (Female, Bright)</option>
+                      </select>
+                    </div>
+
+                    <div class="form-group">
+                      <label>Greeting Message</label>
+                      <textarea
+                        v-model="agent.channels.voice.greeting"
+                        @input="handleInputChange"
+                        rows="2"
+                        class="input-field"
+                        placeholder="Hello! How can I assist you today?"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                      <label>Ending Message</label>
+                      <textarea
+                        v-model="agent.channels.voice.endingMessage"
+                        @input="handleInputChange"
+                        rows="2"
+                        class="input-field"
+                        placeholder="Thank you for calling. Have a great day!"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                      <label>Speech Speed</label>
+                      <input
+                        v-model="agent.channels.voice.speechSpeed"
+                        @input="handleInputChange"
+                        type="range"
+                        min="0.5"
+                        max="2"
+                        step="0.1"
+                        class="range-input">
+                      <div class="range-value">{{ agent.channels.voice.speechSpeed }}x</div>
+                    </div>
+
+                    <div class="form-group">
+                      <label>Language</label>
+                      <select v-model="agent.channels.voice.language" @change="handleInputChange" class="input-field">
+                        <option value="en-US">English (US)</option>
+                        <option value="es-ES">Spanish</option>
+                        <option value="fr-FR">French</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- SMS Channel -->
+                <div class="channel-block">
+                  <div class="channel-header">
+                    <div class="channel-info">
+                      <h4>SMS / Text Messages</h4>
+                      <p class="channel-description">Two-way text messaging with customers</p>
+                    </div>
+                    <label class="toggle-switch">
+                      <input type="checkbox" v-model="agent.channels.sms.enabled" @change="handleInputChange">
+                      <span class="toggle-slider"></span>
+                    </label>
+                  </div>
+
+                  <div v-if="agent.channels.sms.enabled" class="channel-config">
+                    <div class="form-group">
+                      <label>SMS Number</label>
+                      <input
+                        v-model="agent.channels.sms.smsNumber"
+                        @input="handleInputChange"
+                        type="text"
+                        class="input-field"
+                        placeholder="+1 (555) 987-6543">
+                      <div class="hint">Get an SMS-enabled number</div>
+                    </div>
+
+                    <div class="form-group checkbox-group">
+                      <label>
+                        <input type="checkbox" v-model="agent.channels.sms.autoReply" @change="handleInputChange">
+                        Enable Auto-Reply
+                      </label>
+                      <div class="hint">Send automatic responses to incoming texts</div>
+                    </div>
+
+                    <div v-if="agent.channels.sms.autoReply" class="form-group">
+                      <label>Auto-Reply Message</label>
+                      <textarea
+                        v-model="agent.channels.sms.autoReplyMessage"
+                        @input="handleInputChange"
+                        rows="2"
+                        class="input-field"
+                        placeholder="Thanks for texting! I'll respond shortly."></textarea>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Coming Soon Channels -->
+                <div class="channel-block disabled">
+                  <div class="channel-header">
+                    <div class="channel-info">
+                      <h4>WhatsApp Business</h4>
+                      <span class="coming-soon-badge">Coming Soon</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="channel-block disabled">
+                  <div class="channel-header">
+                    <div class="channel-info">
+                      <h4>Instagram DMs</h4>
+                      <span class="coming-soon-badge">Coming Soon</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="channel-block disabled">
+                  <div class="channel-header">
+                    <div class="channel-info">
+                      <h4>Facebook Messenger</h4>
+                      <span class="coming-soon-badge">Coming Soon</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <!-- Knowledge Base -->
-            <div id="knowledge-base" class="config-section build-section-anchor">
-              <h3>Knowledge Base</h3>
-              <p class="section-intro">Add knowledge sources for your agent to reference when answering questions</p>
+            <!-- Sources -->
+            <div v-if="activeBuildSection === 'knowledge-base'" id="knowledge-base" class="config-section build-section-anchor">
+              <h3>Sources</h3>
+              <p class="section-intro">Manage knowledge sources for your agent to reference when answering questions</p>
+
+              <!-- Connected Sources Section -->
+              <div class="sources-main-section">
+                <h4 class="sources-section-title">Connected sources</h4>
+                <div v-if="hasAnyConnectedSources" class="connected-sources-list">
+                  <!-- Connected Integrations -->
+                  <div v-if="agent.knowledgeSources.integrations && agent.knowledgeSources.integrations.length > 0">
+                    <div class="source-type-label">Integrations</div>
+                    <div v-for="integration in agent.knowledgeSources.integrations" :key="integration.id" class="connected-item">
+                      <div class="connected-item-info">
+                        <strong>{{ integration.name }}</strong>
+                        <span class="connected-item-meta">{{ integration.itemCount }} items</span>
+                      </div>
+                      <button class="btn-remove-small" @click="disconnectIntegration(integration.id)">Remove</button>
+                    </div>
+                  </div>
+
+                  <!-- Connected Documents -->
+                  <div v-if="agent.knowledgeSources.documents && agent.knowledgeSources.documents.length > 0">
+                    <div class="source-type-label">Documents</div>
+                    <div v-for="file in agent.knowledgeSources.documents" :key="file.id" class="connected-item">
+                      <div class="connected-item-info">
+                        <strong>{{ file.name }}</strong>
+                        <span class="connected-item-meta">{{ formatFileSize(file.size) }}</span>
+                      </div>
+                      <button class="btn-remove-small" @click="removeWorkspaceFile(file.id)">Remove</button>
+                    </div>
+                  </div>
+
+                  <!-- Connected Text Snippets -->
+                  <div v-if="agent.knowledgeSources.textSnippets && agent.knowledgeSources.textSnippets.length > 0">
+                    <div class="source-type-label">Snippets</div>
+                    <div v-for="snippet in agent.knowledgeSources.textSnippets" :key="snippet.id" class="connected-item">
+                      <div class="connected-item-info">
+                        <strong>{{ snippet.title || 'Text snippet' }}</strong>
+                        <p class="snippet-preview">{{ snippet.content.substring(0, 100) }}{{ snippet.content.length > 100 ? '...' : '' }}</p>
+                      </div>
+                      <button class="btn-remove-small" @click="removeSnippetWorkspace(snippet.id)">Remove</button>
+                    </div>
+                  </div>
+
+                  <!-- Connected Websites -->
+                  <div v-if="agent.knowledgeSources.websites && agent.knowledgeSources.websites.length > 0">
+                    <div class="source-type-label">Websites</div>
+                    <div v-for="site in agent.knowledgeSources.websites" :key="site.id" class="connected-item">
+                      <div class="connected-item-info">
+                        <strong>{{ site.url }}</strong>
+                        <span class="connected-item-meta">{{ site.pageCount }} {{ site.pageCount === 1 ? 'page' : 'pages' }}</span>
+                      </div>
+                      <button class="btn-remove-small" @click="removeWebsiteWorkspace(site.id)">Remove</button>
+                    </div>
+                  </div>
+
+                  <!-- Connected Conversations -->
+                  <div v-if="agent.knowledgeSources.conversations && agent.knowledgeSources.conversations.length > 0">
+                    <div class="source-type-label">Conversations</div>
+                    <div v-for="conv in agent.knowledgeSources.conversations" :key="conv.id" class="connected-item">
+                      <div class="connected-item-info">
+                        <strong>{{ conv.name }}</strong>
+                        <span class="connected-item-meta">{{ conv.count }} conversations</span>
+                      </div>
+                      <button class="btn-remove-small" @click="removeConversationWorkspace(conv.id)">Remove</button>
+                    </div>
+                  </div>
+                </div>
+                <div v-else class="empty-state-simple">
+                  <p>No sources connected yet. Add sources below to help your agent answer questions.</p>
+                </div>
+              </div>
+
+              <!-- Available Sources Section -->
+              <div class="sources-main-section">
+                <h4 class="sources-section-title">Available sources</h4>
 
               <!-- Knowledge Accordion -->
               <div class="knowledge-accordion">
@@ -458,27 +937,11 @@ Policies:
                   <div class="accordion-header" @click="knowledgeTab = knowledgeTab === 'integrations' ? '' : 'integrations'">
                     <div class="accordion-title">
                       <span>Integrations</span>
-                      <span class="accordion-count" v-if="agent.knowledgeSources.integrations && agent.knowledgeSources.integrations.length > 0">
-                        ({{ agent.knowledgeSources.integrations.length }})
-                      </span>
                     </div>
                     <span class="accordion-icon">{{ knowledgeTab === 'integrations' ? '−' : '+' }}</span>
                   </div>
                   <div v-if="knowledgeTab === 'integrations'" class="accordion-content">
-                    <p class="tab-description">Connect platforms like Notion, Confluence, Google Drive, Slack, etc.</p>
-
-                    <div v-if="agent.knowledgeSources.integrations && agent.knowledgeSources.integrations.length > 0" class="connected-integrations">
-                      <h4>Connected Integrations</h4>
-                      <div v-for="integration in agent.knowledgeSources.integrations" :key="integration.id" class="integration-item">
-                        <div class="integration-info">
-                          <strong>{{ integration.name }}</strong>
-                          <span class="integration-meta">{{ integration.itemCount }} items</span>
-                        </div>
-                        <button class="btn-remove-small" @click="disconnectIntegration(integration.id)">Remove</button>
-                      </div>
-                    </div>
-
-                    <h4>{{ agent.knowledgeSources.integrations && agent.knowledgeSources.integrations.length > 0 ? 'Add More Integrations' : 'Available Integrations' }}</h4>
+                    <p class="section-description">Connect platforms like Notion, Confluence, Google Drive, Slack, etc.</p>
                     <div class="integrations-grid">
                       <button v-for="platform in availableIntegrationPlatforms" :key="platform.id"
                               class="integration-card" @click="connectIntegrationWorkspace(platform.id)">
@@ -494,15 +957,11 @@ Policies:
                   <div class="accordion-header" @click="knowledgeTab = knowledgeTab === 'documents' ? '' : 'documents'">
                     <div class="accordion-title">
                       <span>Documents</span>
-                      <span class="accordion-count" v-if="agent.knowledgeSources.documents && agent.knowledgeSources.documents.length > 0">
-                        ({{ agent.knowledgeSources.documents.length }})
-                      </span>
                     </div>
                     <span class="accordion-icon">{{ knowledgeTab === 'documents' ? '−' : '+' }}</span>
                   </div>
                   <div v-if="knowledgeTab === 'documents'" class="accordion-content">
-                    <p class="tab-description">Upload PDFs, Word docs, spreadsheets, or other document files</p>
-
+                    <p class="section-description">Upload PDFs, Word docs, spreadsheets, or other document files</p>
                     <div class="file-upload-section">
                       <input
                         type="file"
@@ -517,20 +976,6 @@ Policies:
                       </button>
                       <span class="upload-hint">PDF, Word, Excel, TXT (max 10MB each)</span>
                     </div>
-
-                    <div v-if="agent.knowledgeSources.documents && agent.knowledgeSources.documents.length > 0" class="uploaded-files-list">
-                      <div v-for="file in agent.knowledgeSources.documents" :key="file.id" class="file-item">
-                        <div class="file-info">
-                          <strong>{{ file.name }}</strong>
-                          <span class="file-size">{{ formatFileSize(file.size) }}</span>
-                        </div>
-                        <button class="btn-remove-small" @click="removeWorkspaceFile(file.id)">Remove</button>
-                      </div>
-                    </div>
-
-                    <div v-else class="empty-state">
-                      <p>No documents uploaded yet</p>
-                    </div>
                   </div>
                 </div>
 
@@ -539,15 +984,11 @@ Policies:
                   <div class="accordion-header" @click="knowledgeTab = knowledgeTab === 'conversations' ? '' : 'conversations'">
                     <div class="accordion-title">
                       <span>Conversations</span>
-                      <span class="accordion-count" v-if="agent.knowledgeSources.conversations && agent.knowledgeSources.conversations.length > 0">
-                        ({{ agent.knowledgeSources.conversations.length }})
-                      </span>
                     </div>
                     <span class="accordion-icon">{{ knowledgeTab === 'conversations' ? '−' : '+' }}</span>
                   </div>
                   <div v-if="knowledgeTab === 'conversations'" class="accordion-content">
-                    <p class="tab-description">Import past conversations to train your agent (CSV or JSON format)</p>
-
+                    <p class="section-description">Import past conversations to train your agent (CSV or JSON format)</p>
                     <div class="file-upload-section">
                       <input
                         type="file"
@@ -562,20 +1003,6 @@ Policies:
                       </button>
                       <span class="upload-hint">CSV or JSON format (max 5MB each)</span>
                     </div>
-
-                    <div v-if="agent.knowledgeSources.conversations && agent.knowledgeSources.conversations.length > 0" class="conversation-files-list">
-                      <div v-for="conv in agent.knowledgeSources.conversations" :key="conv.id" class="conversation-item">
-                        <div class="conversation-info">
-                          <strong>{{ conv.name }}</strong>
-                          <span class="conversation-count">{{ conv.conversationCount }} conversations</span>
-                        </div>
-                        <button class="btn-remove-small" @click="removeConversationWorkspace(conv.id)">Remove</button>
-                      </div>
-                    </div>
-
-                    <div v-else class="empty-state">
-                      <p>No conversations imported yet</p>
-                    </div>
                   </div>
                 </div>
 
@@ -584,15 +1011,11 @@ Policies:
                   <div class="accordion-header" @click="knowledgeTab = knowledgeTab === 'text' ? '' : 'text'">
                     <div class="accordion-title">
                       <span>Snippets</span>
-                      <span class="accordion-count" v-if="agent.knowledgeSources.textSnippets && agent.knowledgeSources.textSnippets.length > 0">
-                        ({{ agent.knowledgeSources.textSnippets.length }})
-                      </span>
                     </div>
                     <span class="accordion-icon">{{ knowledgeTab === 'text' ? '−' : '+' }}</span>
                   </div>
                   <div v-if="knowledgeTab === 'text'" class="accordion-content">
-                    <p class="tab-description">Add text snippets, FAQs, policies, or any text-based information</p>
-
+                    <p class="section-description">Add text snippets, FAQs, policies, or any text-based information</p>
                     <div class="add-snippet-section">
                       <textarea
                         v-model="newSnippetText"
@@ -611,20 +1034,6 @@ Policies:
                         Add Snippet
                       </button>
                     </div>
-
-                    <div v-if="agent.knowledgeSources.textSnippets && agent.knowledgeSources.textSnippets.length > 0" class="snippets-list">
-                      <div v-for="snippet in agent.knowledgeSources.textSnippets" :key="snippet.id" class="snippet-item">
-                        <div class="snippet-info">
-                          <strong>{{ snippet.title || 'Text snippet' }}</strong>
-                          <p class="snippet-preview">{{ snippet.content.substring(0, 100) }}{{ snippet.content.length > 100 ? '...' : '' }}</p>
-                        </div>
-                        <button class="btn-remove-small" @click="removeSnippetWorkspace(snippet.id)">Remove</button>
-                      </div>
-                    </div>
-
-                    <div v-else class="empty-state">
-                      <p>No text snippets added yet</p>
-                    </div>
                   </div>
                 </div>
 
@@ -633,15 +1042,11 @@ Policies:
                   <div class="accordion-header" @click="knowledgeTab = knowledgeTab === 'websites' ? '' : 'websites'">
                     <div class="accordion-title">
                       <span>Websites</span>
-                      <span class="accordion-count" v-if="agent.knowledgeSources.websites && agent.knowledgeSources.websites.length > 0">
-                        ({{ agent.knowledgeSources.websites.length }})
-                      </span>
                     </div>
                     <span class="accordion-icon">{{ knowledgeTab === 'websites' ? '−' : '+' }}</span>
                   </div>
                   <div v-if="knowledgeTab === 'websites'" class="accordion-content">
-                    <p class="tab-description">Add website URLs to crawl and extract content from</p>
-
+                    <p class="section-description">Add website URLs to crawl and extract content from</p>
                     <div class="add-website-section">
                       <input
                         v-model="newWebsiteUrl"
@@ -657,515 +1062,178 @@ Policies:
                         Add Website
                       </button>
                     </div>
+                  </div>
+                </div>
 
-                    <div v-if="agent.knowledgeSources.websites && agent.knowledgeSources.websites.length > 0" class="websites-list">
-                      <div v-for="site in agent.knowledgeSources.websites" :key="site.id" class="website-item">
-                        <div class="website-info">
-                          <strong>{{ site.url }}</strong>
-                          <span class="website-pages">{{ site.pageCount }} {{ site.pageCount === 1 ? 'page' : 'pages' }}</span>
+              </div>
+              </div>
+            </div>
+
+            <!-- Skills (Static UI from Production) -->
+            <div v-if="activeBuildSection === 'skills'" id="skills" class="config-section build-section-anchor">
+              <div class="skills-header">
+                <div class="skills-header-left">
+                  <h3>Skills</h3>
+                  <p class="section-subtitle">What you want your agent to do</p>
+                </div>
+                <div class="skills-header-actions">
+                  <button class="btn-secondary">Create New Skill</button>
+                  <button class="btn-primary">+ Add Skills</button>
+                </div>
+              </div>
+
+              <!-- Filters and Search -->
+              <div class="skills-filters">
+                <input type="text" class="search-input" placeholder="Search skills..." />
+                <div class="filter-group">
+                  <select class="filter-select">
+                    <option>Status</option>
+                    <option>Active</option>
+                    <option>Inactive</option>
+                    <option>Archived</option>
+                  </select>
+                  <select class="filter-select">
+                    <option>All sources</option>
+                    <option>Custom</option>
+                    <option>Marketplace</option>
+                  </select>
+                  <select class="filter-select">
+                    <option>All labels</option>
+                    <option>Calendar</option>
+                    <option>Scheduling</option>
+                    <option>Appointments</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Skills Table -->
+              <div class="skills-table-container">
+                <table class="skills-table">
+                  <thead>
+                    <tr>
+                      <th>Skill</th>
+                      <th>Related Actions</th>
+                      <th>Source</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>
+                        <div class="skill-name">Suggest new appointment time</div>
+                        <div class="skill-labels">
+                          <span class="skill-label">Calendar</span>
+                          <span class="skill-label">Scheduling</span>
+                          <span class="skill-label">Appointments</span>
                         </div>
-                        <button class="btn-remove-small" @click="removeWebsiteWorkspace(site.id)">Remove</button>
-                      </div>
-                    </div>
-
-                    <div v-else class="empty-state">
-                      <p>No websites added yet</p>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-
-            <!-- Skills -->
-            <div id="skills" class="config-section build-section-anchor">
-              <h3>Skills</h3>
-
-              <div class="skills-list">
-                <div v-if="agent.skills && agent.skills.length > 0">
-                  <div v-for="skill in agent.skills" :key="skill.id" class="skill-item" :class="{ 'needs-config': !skill.mcpServer }">
-                    <div class="skill-info">
-                      <div class="skill-header-row">
-                        <div class="skill-name">{{ skill.name }}</div>
-                        <span v-if="!skill.mcpServer" class="config-badge">Needs Configuration</span>
-                      </div>
-                      <div class="skill-desc">{{ skill.description }}</div>
-                      <div v-if="skill.mcpServer" class="skill-mcp-info">
-                        Connected: {{ skill.mcpServer }}
-                      </div>
-                    </div>
-                    <div class="skill-actions">
-                      <button v-if="!skill.mcpServer" class="btn-secondary btn-sm" @click="editSkill(skill)">Configure</button>
-                      <button v-else class="btn-secondary btn-sm" @click="openSkillTest(skill)">Test</button>
-                      <label class="toggle-switch">
-                        <input type="checkbox" v-model="skill.enabled" @change="handleInputChange">
-                        <span class="toggle-slider"></span>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-                <div v-else class="skills-empty">
-                  <div class="empty-title">No Skills Configured</div>
-                  <p class="empty-desc">Skills extend your agent's capabilities beyond answering questions. Add skills to perform actions like checking order status, booking appointments, or looking up account information.</p>
-                </div>
-
-                <button class="btn-add" @click="openSkillsBuilder">+ Add Skill</button>
-              </div>
-            </div>
-
-            <!-- Channels Configuration (omnichannel - all agents) -->
-            <div id="channels-configuration" class="config-section build-section-anchor">
-              <h3>Channels & Integrations</h3>
-              <p class="section-intro">Enable and configure where your agent is available</p>
-
-              <!-- Web Chat Channel -->
-              <div class="channel-block">
-                <div class="channel-header">
-                  <div class="channel-info">
-                    <h4>Web Chat</h4>
-                    <p class="channel-description">Embedded chat widget on your website</p>
-                  </div>
-                  <label class="toggle-switch">
-                    <input type="checkbox" v-model="agent.channels.webChat.enabled" @change="handleInputChange">
-                    <span class="toggle-slider"></span>
-                  </label>
-                </div>
-
-                <div v-if="agent.channels.webChat.enabled" class="channel-config">
-                  <!-- Messages & Greetings -->
-                  <div class="collapsible-section">
-                    <div class="collapsible-header" @click="toggleConfigSection('chatMessages')">
-                      <span class="section-title">Messages & Greetings</span>
-                      <span class="chevron" :class="{ expanded: configSections.chatMessages }">›</span>
-                    </div>
-                    <div v-if="configSections.chatMessages" class="collapsible-content">
-                      <div class="form-group">
-                        <label>Welcome Message</label>
-                        <textarea
-                          v-model="agent.channels.webChat.welcomeMessage"
-                          @input="handleInputChange"
-                          rows="2"
-                          class="input-field"
-                          placeholder="Hi! How can I help you today?"></textarea>
-                        <div class="hint">First message when the chat widget opens</div>
-                      </div>
-
-                      <div class="form-group">
-                        <label>
-                          <input type="checkbox" v-model="agent.channels.webChat.enableProactive" @change="handleInputChange">
-                          Enable Proactive Greeting
-                        </label>
-                        <textarea
-                          v-if="agent.channels.webChat.enableProactive"
-                          v-model="agent.channels.webChat.proactiveMessage"
-                          @input="handleInputChange"
-                          rows="2"
-                          class="input-field"
-                          placeholder="👋 Need help? I'm here to assist!"></textarea>
-                        <div class="hint">Auto-popup message to engage visitors</div>
-                      </div>
-
-                      <div class="form-group">
-                        <label>Expected Response Time</label>
-                        <input
-                          v-model="agent.channels.webChat.responseTime"
-                          @input="handleInputChange"
-                          type="text"
-                          class="input-field"
-                          placeholder="Usually replies in 2 minutes">
-                        <div class="hint">Set customer expectations</div>
-                      </div>
-
-                      <div class="form-group">
-                        <label>
-                          <input type="checkbox" v-model="agent.channels.webChat.showTypingIndicator" @change="handleInputChange">
-                          Show Typing Indicator
-                        </label>
-                        <div class="hint">Show "..." when agent is typing</div>
-                      </div>
-
-                      <div class="form-group">
-                        <label>Away Message</label>
-                        <textarea
-                          v-model="agent.channels.webChat.awayMessage"
-                          @input="handleInputChange"
-                          rows="2"
-                          class="input-field"
-                          placeholder="Let me look that up for you..."></textarea>
-                        <div class="hint">Message shown when agent is processing</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Availability & Hours -->
-                  <div class="collapsible-section">
-                    <div class="collapsible-header" @click="toggleConfigSection('chatAvailability')">
-                      <span class="section-title">Availability & Hours</span>
-                      <span class="chevron" :class="{ expanded: configSections.chatAvailability }">›</span>
-                    </div>
-                    <div v-if="configSections.chatAvailability" class="collapsible-content">
-                      <div class="form-group">
-                        <label>Business Hours</label>
-                        <input
-                          v-model="agent.channels.webChat.businessHours"
-                          @input="handleInputChange"
-                          type="text"
-                          class="input-field"
-                          placeholder="Monday-Friday, 9 AM - 5 PM EST">
-                        <div class="hint">When is the agent available?</div>
-                      </div>
-
-                      <div class="form-group">
-                        <label>Offline Behavior</label>
-                        <select v-model="agent.channels.webChat.offlineBehavior" @change="handleInputChange" class="input-field">
-                          <option value="show-message">Show offline message</option>
-                          <option value="collect-email">Collect email for follow-up</option>
-                          <option value="always-on">Always available (24/7)</option>
-                        </select>
-                      </div>
-
-                      <div v-if="agent.channels.webChat.offlineBehavior !== 'always-on'" class="form-group">
-                        <label>Offline Message</label>
-                        <textarea
-                          v-model="agent.channels.webChat.offlineMessage"
-                          @input="handleInputChange"
-                          rows="2"
-                          class="input-field"
-                          placeholder="We're currently offline. Leave your email and we'll get back to you!"></textarea>
-                      </div>
-
-                      <div class="form-group">
-                        <label>Auto-away Timeout (minutes)</label>
-                        <input
-                          v-model="agent.channels.webChat.autoAwayTimeout"
-                          @input="handleInputChange"
-                          type="number"
-                          class="input-field"
-                          placeholder="5">
-                        <div class="hint">Mark as away after inactivity</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Escalation & Handoff -->
-                  <div class="collapsible-section">
-                    <div class="collapsible-header" @click="toggleConfigSection('chatEscalation')">
-                      <span class="section-title">Escalation & Handoff</span>
-                      <span class="chevron" :class="{ expanded: configSections.chatEscalation }">›</span>
-                    </div>
-                    <div v-if="configSections.chatEscalation" class="collapsible-content">
-                      <div class="form-group">
-                        <label>Transfer Conditions</label>
-                        <textarea
-                          v-model="agent.channels.webChat.transferConditions"
-                          @input="handleInputChange"
-                          rows="3"
-                          class="input-field"
-                          placeholder="e.g., Transfer if customer asks for human agent, mentions refund, or expresses frustration"></textarea>
-                        <div class="hint">When should the agent transfer to a human?</div>
-                      </div>
-
-                      <div class="form-group">
-                        <label>Transfer Destination</label>
-                        <select v-model="agent.channels.webChat.transferDestination" @change="handleInputChange" class="input-field">
-                          <option value="">Select destination</option>
-                          <option value="support-queue">Support Queue</option>
-                          <option value="sales-queue">Sales Queue</option>
-                          <option value="technical-queue">Technical Queue</option>
-                          <option value="manager-queue">Manager Queue</option>
-                        </select>
-                      </div>
-
-                      <div class="form-group">
-                        <label>Handoff Message</label>
-                        <textarea
-                          v-model="agent.channels.webChat.handoffMessage"
-                          @input="handleInputChange"
-                          rows="2"
-                          class="input-field"
-                          placeholder="Let me connect you with a team member who can help..."></textarea>
-                        <div class="hint">What the user sees during transfer</div>
-                      </div>
-
-                      <div class="form-group">
-                        <label>Context to Transfer</label>
-                        <textarea
-                          v-model="agent.channels.webChat.contextToTransfer"
-                          @input="handleInputChange"
-                          rows="2"
-                          class="input-field"
-                          placeholder="Full conversation history, user info, detected intent"></textarea>
-                        <div class="hint">What information to pass to the human agent</div>
-                      </div>
-
-                      <div class="form-group">
-                        <label>
-                          <input type="checkbox" v-model="agent.channels.webChat.enableTranscript" @change="handleInputChange">
-                          Enable Email Transcript
-                        </label>
-                        <div class="hint">Send chat history to customer via email</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Widget Appearance -->
-                  <div class="collapsible-section">
-                    <div class="collapsible-header" @click="toggleConfigSection('chatAppearance')">
-                      <span class="section-title">Widget Appearance</span>
-                      <span class="chevron" :class="{ expanded: configSections.chatAppearance }">›</span>
-                    </div>
-                    <div v-if="configSections.chatAppearance" class="collapsible-content">
-                      <div class="form-group">
-                        <label>Primary Color</label>
-                        <div class="color-picker-group">
-                          <input
-                            v-model="agent.channels.webChat.primaryColor"
-                            @input="handleInputChange"
-                            type="color"
-                            class="color-input">
-                          <input
-                            v-model="agent.channels.webChat.primaryColor"
-                            @input="handleInputChange"
-                            type="text"
-                            class="input-field color-text"
-                            placeholder="#6366f1">
+                      </td>
+                      <td>-</td>
+                      <td>Custom</td>
+                      <td><span class="status-badge active">Active</span></td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <div class="skill-name">Schedule appointment</div>
+                        <div class="skill-labels">
+                          <span class="skill-label">Label A</span>
+                          <span class="skill-label">Label B</span>
+                          <span class="skill-label">Label C</span>
                         </div>
-                        <div class="hint">Main color for the chat widget</div>
-                      </div>
-
-                      <div class="form-group">
-                        <label>Widget Position</label>
-                        <select v-model="agent.channels.webChat.widgetPosition" @change="handleInputChange" class="input-field">
-                          <option value="bottom-right">Bottom Right</option>
-                          <option value="bottom-left">Bottom Left</option>
-                          <option value="top-right">Top Right</option>
-                          <option value="top-left">Top Left</option>
-                        </select>
-                      </div>
-
-                      <div class="form-group">
-                        <label>Agent Display Name</label>
-                        <input
-                          v-model="agent.channels.webChat.displayName"
-                          @input="handleInputChange"
-                          type="text"
-                          class="input-field"
-                          placeholder="Support Assistant">
-                        <div class="hint">Name shown to customers in the chat widget</div>
-                      </div>
-
-                      <div class="form-group">
-                        <label>Widget Size</label>
-                        <select v-model="agent.channels.webChat.widgetSize" @change="handleInputChange" class="input-field">
-                          <option value="compact">Compact</option>
-                          <option value="standard">Standard</option>
-                          <option value="large">Large</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Voice/Phone Channel -->
-              <div class="channel-block">
-                <div class="channel-header">
-                  <div class="channel-info">
-                    <h4>Voice (Phone Calls)</h4>
-                    <p class="channel-description">Inbound and outbound phone conversations</p>
-                  </div>
-                  <label class="toggle-switch">
-                    <input type="checkbox" v-model="agent.channels.voice.enabled" @change="handleInputChange">
-                    <span class="toggle-slider"></span>
-                  </label>
-                </div>
-
-                <div v-if="agent.channels.voice.enabled" class="channel-config">
-                  <div class="form-group">
-                    <label>Phone Number</label>
-                    <input
-                      v-model="agent.channels.voice.phoneNumber"
-                      @input="handleInputChange"
-                      type="text"
-                      class="input-field"
-                      placeholder="+1 (555) 000-0000">
-                    <div class="hint">Get a phone number for your agent</div>
-                  </div>
-
-                  <div class="form-group">
-                    <label>Voice Type</label>
-                    <select v-model="agent.channels.voice.voiceType" @change="handleInputChange" class="input-field">
-                      <option value="nova">Nova (Female, Conversational)</option>
-                      <option value="alloy">Alloy (Neutral, Professional)</option>
-                      <option value="echo">Echo (Male, Warm)</option>
-                      <option value="fable">Fable (Male, Expressive)</option>
-                      <option value="onyx">Onyx (Male, Deep)</option>
-                      <option value="shimmer">Shimmer (Female, Bright)</option>
-                    </select>
-                  </div>
-
-                  <div class="form-group">
-                    <label>Greeting Message</label>
-                    <textarea
-                      v-model="agent.channels.voice.greeting"
-                      @input="handleInputChange"
-                      rows="2"
-                      class="input-field"
-                      placeholder="Hello! How can I assist you today?"></textarea>
-                  </div>
-
-                  <div class="form-group">
-                    <label>Ending Message</label>
-                    <textarea
-                      v-model="agent.channels.voice.endingMessage"
-                      @input="handleInputChange"
-                      rows="2"
-                      class="input-field"
-                      placeholder="Thank you for calling. Have a great day!"></textarea>
-                  </div>
-
-                  <div class="form-group">
-                    <label>Speech Speed</label>
-                    <input
-                      v-model="agent.channels.voice.speechSpeed"
-                      @input="handleInputChange"
-                      type="range"
-                      min="0.5"
-                      max="2"
-                      step="0.1"
-                      class="range-input">
-                    <div class="range-value">{{ agent.channels.voice.speechSpeed }}x</div>
-                  </div>
-
-                  <div class="form-group">
-                    <label>Language</label>
-                    <select v-model="agent.channels.voice.language" @change="handleInputChange" class="input-field">
-                      <option value="en-US">English (US)</option>
-                      <option value="es-ES">Spanish</option>
-                      <option value="fr-FR">French</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <!-- SMS Channel -->
-              <div class="channel-block">
-                <div class="channel-header">
-                  <div class="channel-info">
-                    <h4>SMS / Text Messages</h4>
-                    <p class="channel-description">Two-way text messaging with customers</p>
-                  </div>
-                  <label class="toggle-switch">
-                    <input type="checkbox" v-model="agent.channels.sms.enabled" @change="handleInputChange">
-                    <span class="toggle-slider"></span>
-                  </label>
-                </div>
-
-                <div v-if="agent.channels.sms.enabled" class="channel-config">
-                  <div class="form-group">
-                    <label>SMS Number</label>
-                    <input
-                      v-model="agent.channels.sms.smsNumber"
-                      @input="handleInputChange"
-                      type="text"
-                      class="input-field"
-                      placeholder="+1 (555) 987-6543">
-                    <div class="hint">Get an SMS-enabled number</div>
-                  </div>
-
-                  <div class="form-group checkbox-group">
-                    <label>
-                      <input type="checkbox" v-model="agent.channels.sms.autoReply" @change="handleInputChange">
-                      Enable Auto-Reply
-                    </label>
-                    <div class="hint">Send automatic responses to incoming texts</div>
-                  </div>
-
-                  <div v-if="agent.channels.sms.autoReply" class="form-group">
-                    <label>Auto-Reply Message</label>
-                    <textarea
-                      v-model="agent.channels.sms.autoReplyMessage"
-                      @input="handleInputChange"
-                      rows="2"
-                      class="input-field"
-                      placeholder="Thanks for texting! I'll respond shortly."></textarea>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Coming Soon Channels -->
-              <div class="channel-block disabled">
-                <div class="channel-header">
-                  <div class="channel-info">
-                    <h4>WhatsApp Business</h4>
-                    <span class="coming-soon-badge">Coming Soon</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="channel-block disabled">
-                <div class="channel-header">
-                  <div class="channel-info">
-                    <h4>Instagram DMs</h4>
-                    <span class="coming-soon-badge">Coming Soon</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="channel-block disabled">
-                <div class="channel-header">
-                  <div class="channel-info">
-                    <h4>Facebook Messenger</h4>
-                    <span class="coming-soon-badge">Coming Soon</span>
-                  </div>
-                </div>
+                      </td>
+                      <td>-</td>
+                      <td>
+                        <div>Marketplace</div>
+                        <div class="source-detail">Salesforce</div>
+                      </td>
+                      <td><span class="status-badge active">Active</span></td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <div class="skill-name">Confirm via SMS</div>
+                      </td>
+                      <td>-</td>
+                      <td>Custom</td>
+                      <td><span class="status-badge inactive">Inactive</span></td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <div class="skill-name">Confirm via Email</div>
+                      </td>
+                      <td>-</td>
+                      <td>Custom</td>
+                      <td><span class="status-badge archived">Archived</span></td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
 
-            <!-- Conversation Flow (all agents) -->
-            <div id="conversation-flow" class="config-section build-section-anchor">
-              <h3>Conversation Flow</h3>
-              <p class="section-intro">Advanced workflow builder for digital and voice interactions</p>
 
-              <div class="flow-intro-card">
-                <div class="flow-intro-title">Advanced Workflow Builder</div>
-                <div class="flow-features">
-                  <div>• Drag-and-drop node editor</div>
-                  <div>• Digital nodes: Message, Wait, Survey, Contact Collection</div>
-                  <div>• Voice nodes: Play, Collect, Menu, Transfer</div>
-                  <div>• Shared nodes: Branch, API, Assign, Expert</div>
-                  <div>• Pre-built templates</div>
+            <!-- Visual Builder (Static - from Onboarding) -->
+            <div v-if="activeBuildSection === 'visual-builder'" id="visual-builder" class="config-section build-section-anchor visual-builder-container">
+              <div class="visual-builder-layout">
+                <!-- Left Panel: Conversation Flow Canvas -->
+                <div class="vb-canvas-panel">
+                  <div class="vb-canvas-header">
+                    <h3>Conversation Flow</h3>
+                    <div class="vb-canvas-controls">
+                      <button class="vb-control-btn">-</button>
+                      <span class="vb-zoom-level">100%</span>
+                      <button class="vb-control-btn">+</button>
+                      <button class="vb-control-btn">Reset</button>
+                    </div>
+                  </div>
+
+                  <!-- Canvas Area -->
+                  <div class="vb-canvas-area">
+                    <div class="vb-canvas-empty-state">
+                      <p>No conversation flow yet</p>
+                      <p class="vb-empty-hint">Start building with AI on the right →</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              <div class="flow-status">
-                <div class="status-label">Current Flow:</div>
-                <div class="status-value">Default Conversational Pattern</div>
-              </div>
+                <!-- Right Panel: AI Builder -->
+                <div class="vb-builder-panel">
+                  <div class="vb-builder-tabs">
+                    <button class="vb-tab-btn active">Build with AI</button>
+                    <button class="vb-tab-btn" disabled>Edit Node</button>
+                  </div>
 
-              <button class="btn-secondary" disabled>
-                Open Workflow Builder (Demo)
-              </button>
+                  <!-- AI Builder Tab -->
+                  <div class="vb-ai-builder-tab">
+                    <div class="vb-ai-messages">
+                      <div class="vb-ai-message assistant">
+                        <div class="vb-message-content">
+                          Hi! I'll help you build a conversation flow for:<br/><br/>
+                          "{{ agent.intent || agent.description }}"<br/><br/>
+                          Tell me how your agent should handle conversations. For example:<br/>
+                          • "Start by asking for their name"<br/>
+                          • "Ask if they want to book or reschedule"<br/>
+                          • "Handle payment confirmation"
+                        </div>
+                      </div>
+                    </div>
 
-              <div class="flow-preview">
-                <div class="flow-node">Start</div>
-                <div class="flow-connector">→</div>
-                <div class="flow-node">Greeting</div>
-                <div class="flow-connector">→</div>
-                <div class="flow-node">Collect Input</div>
-                <div class="flow-connector">→</div>
-                <div class="flow-node">Agent Processing</div>
-                <div class="flow-connector">→</div>
-                <div class="flow-node">End</div>
+                    <div class="vb-ai-input-area">
+                      <textarea
+                        placeholder="Describe the conversation flow you want to build..."
+                        rows="3"
+                      ></textarea>
+                      <button class="vb-send-btn">Send</button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
           </div>
 
-            <!-- Testing Panel (Right Column) -->
-            <div class="build-testing-panel">
+            <!-- Testing Panel (Right Column) - Hide for Visual Builder -->
+            <div v-if="activeBuildSection !== 'visual-builder'" class="build-testing-panel">
               <TestingPanel v-if="agent" :agent="agent" />
             </div>
+          </div>
           </template>
         </div>
 
@@ -1191,83 +1259,272 @@ Policies:
                 </button>
               </div>
             </div>
-
-            <!-- Free Testing Notice -->
-            <div class="test-info-banner">
-              <div class="info-icon">ℹ️</div>
-              <div class="info-text">
-                <strong>Testing is free:</strong> Test your agent as much as you want. Testing doesn't use any tokens or count toward your usage limits.
-              </div>
-            </div>
-
-            <!-- Empty State -->
-            <div v-if="!agent.testScenarios || agent.testScenarios.length === 0" class="test-empty-state">
-              <h4>No Test Scenarios</h4>
-              <p>Create test scenarios to validate your agent's responses with keyword checking</p>
-              <button class="btn-primary" @click="showTestBuilderModal = true">
-                + Create First Test
-              </button>
-            </div>
-
-            <!-- Test Scenarios List -->
-            <div v-else class="test-scenarios-list">
-              <div v-for="scenario in agent.testScenarios" :key="scenario.id" class="scenario-card">
-                <div class="scenario-header">
-                  <div class="scenario-name">{{ scenario.name }}</div>
-                  <button
-                    class="scenario-run-btn"
-                    :class="{
-                      'running': runningTests[scenario.id],
-                      'passed': scenarioResults[scenario.id]?.passed === true,
-                      'failed': scenarioResults[scenario.id]?.passed === false
-                    }"
-                    @click="runScenario(scenario)"
-                    :disabled="runningTests[scenario.id]">
-                    <span v-if="runningTests[scenario.id]">
-                      Running<span class="loading-dots">...</span>
-                    </span>
-                    <span v-else-if="scenarioResults[scenario.id]?.passed === true">
-                      ✓ Passed
-                    </span>
-                    <span v-else-if="scenarioResults[scenario.id]?.passed === false">
-                      ✗ Failed
-                    </span>
-                    <span v-else>Run Test</span>
-                  </button>
-                </div>
-
-                <div class="scenario-prompt">
-                  <strong>Prompt:</strong> {{ scenario.prompt }}
-                </div>
-
-                <div class="scenario-keywords">
-                  <strong>Expected Keywords:</strong>
-                  <span class="keywords-list">{{ scenario.expectedKeywords.join(', ') }}</span>
-                </div>
-
-                <!-- Test Results -->
-                <div v-if="scenarioResults[scenario.id]" class="scenario-results">
-                  <div class="result-response">
-                    <strong>Agent Response:</strong>
-                    <p>{{ scenarioResults[scenario.id].response }}</p>
-                  </div>
-
-                  <div v-if="scenarioResults[scenario.id].matchedKeywords.length > 0" class="result-matched">
-                    <strong>✓ Matched Keywords:</strong>
-                    <span class="matched-keywords">{{ scenarioResults[scenario.id].matchedKeywords.join(', ') }}</span>
-                  </div>
-
-                  <div v-if="scenarioResults[scenario.id].missingKeywords.length > 0" class="result-missing">
-                    <strong>✗ Missing Keywords:</strong>
-                    <span class="missing-keywords">{{ scenarioResults[scenario.id].missingKeywords.join(', ') }}</span>
-                  </div>
+              <!-- Free Testing Notice -->
+              <div class="test-info-banner">
+                <div class="info-icon">ℹ️</div>
+                <div class="info-text">
+                  <strong>Testing is free:</strong> Test your agent as much as you want. Testing doesn't use any tokens or count toward your usage limits.
                 </div>
               </div>
-            </div>
+
+              <!-- Empty State -->
+              <div v-if="!agent.testScenarios || agent.testScenarios.length === 0" class="test-empty-state">
+                <h4>No Test Scenarios</h4>
+                <p>Create test scenarios to validate your agent's responses with keyword checking</p>
+                <button class="btn-primary" @click="showTestBuilderModal = true">
+                  + Create First Test
+                </button>
+              </div>
+
+              <!-- Test Scenarios List -->
+              <div v-else class="test-scenarios-list">
+                <div v-for="scenario in agent.testScenarios" :key="scenario.id" class="scenario-card">
+                  <div class="scenario-header">
+                    <div class="scenario-name">{{ scenario.name }}</div>
+                    <button
+                      class="scenario-run-btn"
+                      :class="{
+                        'running': runningTests[scenario.id],
+                        'passed': scenarioResults[scenario.id]?.passed === true,
+                        'failed': scenarioResults[scenario.id]?.passed === false
+                      }"
+                      @click="runScenario(scenario)"
+                      :disabled="runningTests[scenario.id]">
+                      <span v-if="runningTests[scenario.id]">
+                        Running<span class="loading-dots">...</span>
+                      </span>
+                      <span v-else-if="scenarioResults[scenario.id]?.passed === true">
+                        ✓ Passed
+                      </span>
+                      <span v-else-if="scenarioResults[scenario.id]?.passed === false">
+                        ✗ Failed
+                      </span>
+                      <span v-else>Run Test</span>
+                    </button>
+                  </div>
+
+                  <div class="scenario-prompt">
+                    <strong>Prompt:</strong> {{ scenario.prompt }}
+                  </div>
+
+                  <div class="scenario-keywords">
+                    <strong>Expected Keywords:</strong>
+                    <span class="keywords-list">{{ scenario.expectedKeywords.join(', ') }}</span>
+                  </div>
+
+                  <!-- Test Results -->
+                  <div v-if="scenarioResults[scenario.id]" class="scenario-results">
+                    <div class="result-response">
+                      <strong>Agent Response:</strong>
+                      <p>{{ scenarioResults[scenario.id].response }}</p>
+                    </div>
+
+                    <div v-if="scenarioResults[scenario.id].matchedKeywords.length > 0" class="result-matched">
+                      <strong>✓ Matched Keywords:</strong>
+                      <span class="matched-keywords">{{ scenarioResults[scenario.id].matchedKeywords.join(', ') }}</span>
+                    </div>
+
+                    <div v-if="scenarioResults[scenario.id].missingKeywords.length > 0" class="result-missing">
+                      <strong>✗ Missing Keywords:</strong>
+                      <span class="missing-keywords">{{ scenarioResults[scenario.id].missingKeywords.join(', ') }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
           </div>
 
           <div class="test-panel-wrapper">
             <TestingPanel v-if="agent" :agent="agent" />
+          </div>
+        </div>
+
+        <!-- EVALUATE Tab Content -->
+        <div v-else-if="activeTab === 'evaluate'" class="evaluate-tab-layout">
+          <div v-if="!agent" class="evaluate-main">
+            <p>Loading agent...</p>
+          </div>
+          <div v-else class="evaluate-main">
+            <!-- Header -->
+            <div class="test-header">
+              <div class="test-header-left">
+                <h3>Evaluate Test Results</h3>
+                <span class="test-meta">{{ agentTypeLabel }}</span>
+              </div>
+            </div>
+
+            <!-- Empty State: No Test Scenarios -->
+            <div v-if="!agent.testScenarios || agent.testScenarios.length === 0" class="test-empty-state">
+              <h4>No Test Scenarios to Evaluate</h4>
+              <p>Create and run test scenarios first, then come back here to evaluate them.</p>
+              <button class="btn-primary" @click="$router.push(`/agents-v2/${agent.id}/test`)">
+                Go to Test Tab
+              </button>
+            </div>
+
+            <!-- Evaluate Layout -->
+            <div v-else class="evaluate-layout">
+              <!-- Left: Question List with Filters -->
+              <div class="question-list-panel">
+                <!-- Filters -->
+                <div class="eval-filters">
+                  <div class="filter-group">
+                    <label>Answer Status</label>
+                    <select v-model="evaluateFilters.answerStatus">
+                      <option value="all">All</option>
+                      <option value="answered">Answered</option>
+                      <option value="unanswered">Unanswered</option>
+                    </select>
+                  </div>
+                  <div class="filter-group">
+                    <label>Rating</label>
+                    <select v-model="evaluateFilters.rating">
+                      <option value="all">All Ratings</option>
+                      <option value="unrated">Unrated</option>
+                      <option value="good">Good</option>
+                      <option value="acceptable">Acceptable</option>
+                      <option value="poor">Poor</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Question List -->
+                <div class="question-list">
+                  <div
+                    v-for="scenario in filteredScenariosForEval"
+                    :key="scenario.id"
+                    class="question-item"
+                    :class="{
+                      'selected': selectedScenarioForEval?.id === scenario.id,
+                      'has-rating': scenario.lastRun?.rating
+                    }"
+                    @click="selectScenarioForEval(scenario)"
+                  >
+                    <div class="question-header">
+                      <span class="question-name">{{ scenario.name }}</span>
+                      <span
+                        v-if="scenario.lastRun?.rating"
+                        class="rating-badge"
+                        :class="scenario.lastRun.rating"
+                      >
+                        {{ scenario.lastRun.rating }}
+                      </span>
+                    </div>
+                    <div class="question-prompt">{{ scenario.prompt }}</div>
+                    <div class="question-status">
+                      <span v-if="scenario.lastRun?.response" class="status-answered">✓ Answered</span>
+                      <span v-else class="status-unanswered">Not run yet</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Empty state -->
+                <div v-if="filteredScenariosForEval.length === 0" class="eval-empty">
+                  <p>No scenarios match the selected filters</p>
+                </div>
+              </div>
+
+              <!-- Right: Evaluation Panel -->
+              <div class="evaluation-panel">
+                <div v-if="selectedScenarioForEval" class="eval-content">
+                  <!-- Question -->
+                  <div class="eval-section">
+                    <h4>Question</h4>
+                    <p class="eval-question">{{ selectedScenarioForEval.prompt }}</p>
+                  </div>
+
+                  <!-- Answer -->
+                  <div class="eval-section">
+                    <h4>Agent Answer</h4>
+                    <div v-if="selectedScenarioForEval.lastRun?.response" class="eval-answer">
+                      <p>{{ selectedScenarioForEval.lastRun.response }}</p>
+                    </div>
+                    <div v-else class="eval-no-answer">
+                      <p>This scenario hasn't been run yet.</p>
+                      <button class="btn-secondary" @click="runScenario(selectedScenarioForEval)">
+                        Run Now
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Content Used -->
+                  <div v-if="selectedScenarioForEval.lastRun?.contentUsed?.length > 0" class="eval-section">
+                    <h4>Content Used</h4>
+                    <div class="content-tags">
+                      <span
+                        v-for="(content, idx) in selectedScenarioForEval.lastRun.contentUsed"
+                        :key="idx"
+                        class="content-tag"
+                      >
+                        {{ content }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Guidance Used -->
+                  <div v-if="selectedScenarioForEval.lastRun?.guidanceUsed?.length > 0" class="eval-section">
+                    <h4>Guidance Used</h4>
+                    <div class="content-tags">
+                      <span
+                        v-for="(guidance, idx) in selectedScenarioForEval.lastRun.guidanceUsed"
+                        :key="idx"
+                        class="content-tag"
+                      >
+                        {{ guidance }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Rating -->
+                  <div class="eval-section">
+                    <h4>Rate this answer</h4>
+                    <div class="rating-buttons">
+                      <button
+                        class="rating-btn good"
+                        :class="{ selected: selectedScenarioForEval.lastRun?.rating === 'good' }"
+                        @click="rateScenario(selectedScenarioForEval.id, 'good')"
+                      >
+                        <span class="rating-label">Good</span>
+                        <span class="rating-key">G</span>
+                      </button>
+                      <button
+                        class="rating-btn acceptable"
+                        :class="{ selected: selectedScenarioForEval.lastRun?.rating === 'acceptable' }"
+                        @click="rateScenario(selectedScenarioForEval.id, 'acceptable')"
+                      >
+                        <span class="rating-label">Acceptable</span>
+                        <span class="rating-key">A</span>
+                      </button>
+                      <button
+                        class="rating-btn poor"
+                        :class="{ selected: selectedScenarioForEval.lastRun?.rating === 'poor' }"
+                        @click="rateScenario(selectedScenarioForEval.id, 'poor')"
+                      >
+                        <span class="rating-label">Poor</span>
+                        <span class="rating-key">P</span>
+                      </button>
+                    </div>
+                    <p class="rating-hint">Use keyboard shortcuts: G, A, or P</p>
+                  </div>
+
+                  <!-- Internal Notes -->
+                  <div class="eval-section">
+                    <h4>Internal Notes (optional)</h4>
+                    <textarea
+                      class="eval-notes"
+                      :value="selectedScenarioForEval.lastRun?.notes || ''"
+                      @input="updateEvaluationNotes(selectedScenarioForEval.id, $event.target.value)"
+                      placeholder="Add notes about this evaluation..."
+                      rows="4"
+                    ></textarea>
+                  </div>
+                </div>
+
+                <!-- No selection state -->
+                <div v-else class="eval-no-selection">
+                  <p>Select a question to evaluate</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1623,6 +1880,14 @@ const runningTests = ref({})
 const scenarioResults = ref({})
 const runningAllTests = ref(false)
 
+// Evaluate mode state
+const testMode = ref('scenarios') // 'scenarios' | 'evaluate'
+const selectedScenarioForEval = ref(null)
+const evaluateFilters = ref({
+  answerStatus: 'all', // 'all' | 'answered' | 'unanswered'
+  rating: 'all' // 'all' | 'good' | 'acceptable' | 'poor' | 'unrated'
+})
+
 
 // Agent Actions Menu & Modals
 const showActionsMenu = ref(false)
@@ -1762,6 +2027,19 @@ const testSuggestions = computed(() => {
     general: ["What are your hours?", "Where are you located?", "How can I contact you?"]
   }
   return suggestions[agent.value?.problemType] || ["What can you help me with?", "Tell me about your services", "How do I get started?"]
+})
+
+// Check if any sources are connected
+const hasAnyConnectedSources = computed(() => {
+  if (!agent.value?.knowledgeSources) return false
+  const ks = agent.value.knowledgeSources
+  return (
+    (ks.integrations && ks.integrations.length > 0) ||
+    (ks.documents && ks.documents.length > 0) ||
+    (ks.textSnippets && ks.textSnippets.length > 0) ||
+    (ks.websites && ks.websites.length > 0) ||
+    (ks.conversations && ks.conversations.length > 0)
+  )
 })
 
 const dynamicTestSuggestions = computed(() => {
@@ -1928,30 +2206,56 @@ const hasAnyKnowledge = computed(() => {
          availableKnowledge.value.conversations.enabled
 })
 
+// Filtered scenarios for Evaluate mode
+const filteredScenariosForEval = computed(() => {
+  if (!agent.value?.testScenarios) return []
+
+  return agent.value.testScenarios.filter(scenario => {
+    // Filter by answer status
+    if (evaluateFilters.value.answerStatus === 'answered' && !scenario.lastRun?.response) {
+      return false
+    }
+    if (evaluateFilters.value.answerStatus === 'unanswered' && scenario.lastRun?.response) {
+      return false
+    }
+
+    // Filter by rating
+    if (evaluateFilters.value.rating !== 'all') {
+      if (evaluateFilters.value.rating === 'unrated' && scenario.lastRun?.rating) {
+        return false
+      }
+      if (evaluateFilters.value.rating !== 'unrated' && scenario.lastRun?.rating !== evaluateFilters.value.rating) {
+        return false
+      }
+    }
+
+    return true
+  })
+})
+
 // Build sections navigation (dynamic based on agent type)
 // Order prioritizes content over visual configuration
 const buildSections = computed(() => {
   const sections = [
     { id: 'configuration', label: 'Configuration' },
-    { id: 'knowledge-base', label: 'Knowledge Base' },
+    { id: 'knowledge-base', label: 'Sources' },
     { id: 'skills', label: 'Skills' }
   ]
 
   // Check if this is an omnichannel agent (new model with channels object)
   if (agent.value?.channels) {
-    // New omnichannel agents show unified channels section
-    sections.push({ id: 'channels-configuration', label: 'Channels & Integrations' })
-    // Add conversation flow for all agents (supports both digital and voice)
-    sections.push({ id: 'conversation-flow', label: 'Conversation Flow' })
+    // Channels & Integrations is now part of Configuration tab
+    // Add visual builder for all agents (supports both digital and voice)
+    sections.push({ id: 'visual-builder', label: 'Visual Builder' })
   } else if (agent.value?.agentType === 'chat') {
     // Old chat agents
     sections.push({ id: 'chat-configuration', label: 'Chat Configuration' })
     sections.push({ id: 'channels', label: 'Channels' })
-    sections.push({ id: 'conversation-flow', label: 'Conversation Flow' })
+    sections.push({ id: 'visual-builder', label: 'Visual Builder' })
   } else if (agent.value?.agentType === 'phone') {
     // Old voice agents
     sections.push({ id: 'voice-configuration', label: 'Voice Configuration' })
-    sections.push({ id: 'conversation-flow', label: 'Conversation Flow' })
+    sections.push({ id: 'visual-builder', label: 'Visual Builder' })
   }
 
   return sections
@@ -1976,6 +2280,7 @@ function toggleConfigSection(section) {
 const activeTab = computed(() => {
   if (route.path.includes('/build')) return 'build'
   if (route.path.includes('/test')) return 'test'
+  if (route.path.includes('/evaluate')) return 'evaluate'
   if (route.path.includes('/monitor')) return 'monitor'
   return 'build'
 })
@@ -1999,7 +2304,6 @@ const activeChannelLabels = computed(() => {
 
   return labels
 })
-
 
 // Wizard Mode Computed
 const isNewAgent = computed(() => {
@@ -2138,13 +2442,7 @@ function saveAgent() {
   }
 }
 
-function scrollToBuildSection(sectionId) {
-  activeBuildSection.value = sectionId
-  const element = document.getElementById(sectionId)
-  if (element && buildMainContent.value) {
-    element.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
-}
+// Tab-based navigation - no longer need scroll function
 
 // Test Scenarios Functions
 function closeTestBuilderModal() {
@@ -2193,6 +2491,13 @@ async function runScenario(scenario) {
   // Validate keywords
   const result = validateKeywords(response, scenario.expectedKeywords)
 
+  // Mock content/guidance used (in real implementation, this would come from the AI response)
+  const contentUsed = agent.value.knowledge?.slice(0, 2).map(k => k.name || k.title) || []
+  const guidanceUsed = ['Knowledge Base']
+  if (agent.value.skills?.length > 0) {
+    guidanceUsed.push('Skills')
+  }
+
   scenarioResults.value[scenario.id] = {
     response,
     passed: result.missingKeywords.length === 0,
@@ -2200,6 +2505,17 @@ async function runScenario(scenario) {
     missingKeywords: result.missingKeywords
   }
 
+  // Store lastRun data for evaluation
+  scenario.lastRun = {
+    timestamp: new Date().toISOString(),
+    response,
+    contentUsed,
+    guidanceUsed,
+    rating: scenario.lastRun?.rating || null, // Preserve existing rating
+    notes: scenario.lastRun?.notes || ''
+  }
+
+  saveAgent()
   runningTests.value[scenario.id] = false
 }
 
@@ -2248,6 +2564,51 @@ function generateTestResponse(scenario) {
   } else {
     // Include no keywords
     return `Thank you for your question. I'd be happy to help you with that. Could you provide more details?`
+  }
+}
+
+// Evaluate mode functions
+function selectScenarioForEval(scenario) {
+  selectedScenarioForEval.value = scenario
+}
+
+function rateScenario(scenarioId, rating) {
+  const scenario = agent.value.testScenarios.find(s => s.id === scenarioId)
+  if (!scenario) return
+
+  if (!scenario.lastRun) {
+    scenario.lastRun = {}
+  }
+
+  scenario.lastRun.rating = rating
+  scenario.lastRun.ratedAt = new Date().toISOString()
+
+  saveAgent()
+}
+
+function updateEvaluationNotes(scenarioId, notes) {
+  const scenario = agent.value.testScenarios.find(s => s.id === scenarioId)
+  if (!scenario) return
+
+  if (!scenario.lastRun) {
+    scenario.lastRun = {}
+  }
+
+  scenario.lastRun.notes = notes
+  saveAgent()
+}
+
+// Keyboard shortcuts for rating (G/A/P)
+function handleEvalKeyPress(event) {
+  if (!selectedScenarioForEval.value || testMode.value !== 'evaluate') return
+
+  const key = event.key.toLowerCase()
+  if (key === 'g') {
+    rateScenario(selectedScenarioForEval.value.id, 'good')
+  } else if (key === 'a') {
+    rateScenario(selectedScenarioForEval.value.id, 'acceptable')
+  } else if (key === 'p') {
+    rateScenario(selectedScenarioForEval.value.id, 'poor')
   }
 }
 
@@ -3120,6 +3481,8 @@ function formatDate(isoString) {
 // Lifecycle
 onMounted(() => {
   loadAgent()
+  // Add keyboard listener for evaluation shortcuts
+  window.addEventListener('keydown', handleEvalKeyPress)
 })
 
 watch(() => route.params.id, () => {
@@ -3138,6 +3501,8 @@ watch(wizardMode, (isActive) => {
 // Cleanup on unmount
 onUnmounted(() => {
   document.body.classList.remove('wizard-mode-active')
+  // Remove keyboard listener
+  window.removeEventListener('keydown', handleEvalKeyPress)
 })
 
 // Watch for scroll position to update active section
@@ -3289,45 +3654,59 @@ if (typeof window !== 'undefined') {
   flex-direction: column;
 }
 
-/* BUILD Tab Layout - 3 columns */
+/* BUILD Tab Layout - Horizontal tabs + 2 columns */
 .build-layout {
-  display: grid;
-  grid-template-columns: 200px 1fr 350px;
-  gap: 0;
+  display: flex;
+  flex-direction: column;
   height: 100%;
   overflow: hidden;
 }
 
-/* Section Navigator (Left Column) */
-.build-sections-nav {
-  border-right: 1px solid #ddd;
-  padding: 20px 0;
-  background: #fafafa;
-  overflow-y: auto;
+/* Horizontal Build Tabs */
+.build-tabs-nav {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid #ddd;
+  background: #fff;
+  padding: 0 40px;
+  flex-shrink: 0;
 }
 
-.section-nav-item {
-  padding: 10px 20px;
-  font-size: 13px;
+.build-tab-item {
+  padding: 14px 20px;
+  font-size: 14px;
+  font-weight: 500;
   color: #666;
   cursor: pointer;
-  transition: all 0.15s;
-  border-left: 3px solid transparent;
+  transition: all 0.2s;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
 }
 
-.section-nav-item:hover {
-  background: #f0f0f0;
+.build-tab-item:hover {
   color: #000;
 }
 
-.section-nav-item.active {
-  background: #e8e8e8;
+.build-tab-item.active {
   color: #000;
-  font-weight: 600;
-  border-left-color: #000;
+  border-bottom-color: #000;
 }
 
-/* Build Main Content (Middle Column) */
+/* Build Content Wrapper (2 columns: main + test panel) */
+.build-content-wrapper {
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Full width when Visual Builder is active */
+.build-content-wrapper:has(.visual-builder-container) {
+  grid-template-columns: 1fr;
+}
+
+/* Build Main Content */
 .build-main {
   overflow-y: auto;
   padding: 40px;
@@ -3335,13 +3714,6 @@ if (typeof window !== 'undefined') {
 }
 
 .config-section {
-  margin-bottom: 48px;
-  padding-bottom: 48px;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.config-section:last-child {
-  border-bottom: none;
   margin-bottom: 0;
   padding-bottom: 0;
 }
@@ -3350,6 +3722,20 @@ if (typeof window !== 'undefined') {
   font-size: 20px;
   font-weight: 600;
   margin: 0 0 20px 0;
+  color: #000;
+}
+
+/* Subsection within config (e.g., Channels within Configuration) */
+.subsection {
+  margin-top: 48px;
+  padding-top: 32px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.subsection h4 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
   color: #000;
 }
 
@@ -3406,6 +3792,21 @@ textarea.input-field {
   gap: 0;
   height: 100%;
   overflow: hidden;
+}
+
+/* EVALUATE Tab Layout - Full width */
+.evaluate-tab-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.evaluate-main {
+  padding: 40px;
+  overflow-y: auto;
+  background: #fff;
+  flex: 1;
 }
 
 .test-scenarios-main {
@@ -3739,7 +4140,83 @@ textarea.input-field {
   margin-bottom: 32px;
 }
 
-/* Knowledge Base Section */
+/* Knowledge Base Section - Connected Sources */
+.connected-sources-section {
+  margin-bottom: 32px;
+  padding: 20px;
+  background: #f8f8f8;
+  border-radius: 8px;
+}
+
+.connected-header h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #000;
+  margin: 0 0 16px 0;
+}
+
+.connected-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.connected-item:last-child {
+  margin-bottom: 0;
+}
+
+.connected-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.connected-item-info strong {
+  display: block;
+  font-size: 14px;
+  color: #000;
+  margin-bottom: 4px;
+}
+
+.connected-item-meta {
+  font-size: 13px;
+  color: #666;
+}
+
+.snippet-preview {
+  font-size: 13px;
+  color: #666;
+  margin: 4px 0 0 0;
+  line-height: 1.4;
+}
+
+/* Available Sources Section */
+.available-sources-section h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #000;
+  margin: 0 0 8px 0;
+}
+
+.section-description {
+  font-size: 13px;
+  color: #666;
+  margin: 0 0 16px 0;
+  line-height: 1.5;
+}
+
+/* Accordion count badge */
+.accordion-count {
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+  margin-left: 8px;
+}
+
 .knowledge-header {
   display: flex;
   justify-content: space-between;
@@ -3943,125 +4420,392 @@ textarea.input-field {
   margin: 0;
 }
 
-/* Skills */
-.skills-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.skill-item {
+/* Skills (Static Table UI) */
+.skills-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 16px;
-  border: 1px solid #ddd;
-  background: #fafafa;
-  transition: all 0.2s;
-}
-
-.skill-item:hover {
-  border-color: #999;
-  background: #f5f5f5;
-}
-
-.skill-info {
-  flex: 1;
-}
-
-.skill-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #000;
-  margin-bottom: 4px;
-}
-
-.skill-description {
-  font-size: 13px;
-  color: #666;
-  line-height: 1.4;
-}
-
-.skill-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.btn-sm {
-  padding: 6px 12px;
-  font-size: 12px;
-}
-
-/* Conversation Flow */
-.flow-intro-card {
-  padding: 24px;
-  background: #fafafa;
-  border: 1px solid #ddd;
+  align-items: flex-start;
   margin-bottom: 24px;
 }
 
-.flow-intro-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #000;
-  margin-bottom: 12px;
+.skills-header-left h3 {
+  margin: 0 0 4px 0;
 }
 
-.flow-features {
+.section-subtitle {
   font-size: 14px;
   color: #666;
-  line-height: 1.8;
+  margin: 0;
 }
 
-.flow-status {
+.skills-header-actions {
   display: flex;
+  gap: 12px;
+}
+
+.skills-filters {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+}
+
+.skills-filters .search-input {
+  flex: 1;
+  max-width: 300px;
+  padding: 8px 12px;
+  font-size: 14px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  outline: none;
+}
+
+.skills-filters .search-input:focus {
+  border-color: #999;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: row;
   align-items: center;
   gap: 8px;
-  margin-bottom: 16px;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+}
+
+.filter-select {
+  padding: 8px 12px;
+  font-size: 14px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  outline: none;
+  white-space: nowrap;
+  min-width: 120px;
+  flex-shrink: 0;
+}
+
+.filter-select:hover {
+  border-color: #999;
+}
+
+.skills-table-container {
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.skills-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+.skills-table thead {
+  background: #fafafa;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.skills-table th {
+  text-align: left;
   padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.skills-table tbody tr {
+  border-bottom: 1px solid #e0e0e0;
+  transition: background 0.2s;
+}
+
+.skills-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.skills-table tbody tr:hover {
+  background: #fafafa;
+}
+
+.skills-table td {
+  padding: 16px;
+  font-size: 14px;
+  color: #000;
+  vertical-align: top;
+}
+
+.skills-table .skill-name {
+  font-weight: 500;
+  color: #000;
+  margin-bottom: 8px;
+}
+
+.skill-labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.skill-label {
+  display: inline-block;
+  padding: 3px 8px;
+  font-size: 12px;
+  background: #f0f0f0;
+  border: 1px solid #e0e0e0;
+  border-radius: 3px;
+  color: #666;
+}
+
+.source-detail {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 3px;
+  text-transform: capitalize;
+}
+
+.status-badge.active {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #c8e6c9;
+}
+
+.status-badge.inactive {
   background: #f5f5f5;
+  color: #666;
   border: 1px solid #e0e0e0;
 }
 
-.status-label {
-  font-size: 13px;
-  color: #666;
-  font-weight: 500;
+.status-badge.archived {
+  background: #fff3e0;
+  color: #e65100;
+  border: 1px solid #ffe0b2;
 }
 
-.status-value {
-  font-size: 13px;
-  color: #000;
+/* Visual Builder (Static - from Onboarding) */
+.visual-builder-container {
+  padding: 0 !important;
+  margin: 0 !important;
+  height: calc(100vh - 200px);
+}
+
+.visual-builder-layout {
+  display: grid;
+  grid-template-columns: 1fr 450px;
+  height: 100%;
+  min-height: 600px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+/* Left Panel: Canvas */
+.vb-canvas-panel {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-right: 1px solid #e0e0e0;
+  overflow: hidden;
+}
+
+.vb-canvas-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid #e0e0e0;
+  background: #fafafa;
+}
+
+.vb-canvas-header h3 {
+  font-size: 18px;
   font-weight: 600;
+  margin: 0;
 }
 
-.flow-preview {
+.vb-canvas-controls {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 24px;
-  background: #fafafa;
-  border: 1px solid #ddd;
-  margin-top: 20px;
-  overflow-x: auto;
 }
 
-.flow-node {
-  padding: 12px 20px;
-  background: #fff;
-  border: 2px solid #000;
+.vb-control-btn {
+  padding: 6px 12px;
+  background: #f8f8f8;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.vb-control-btn:hover {
+  background: #000;
+  color: #fff;
+  border-color: #000;
+}
+
+.vb-zoom-level {
   font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
-  flex-shrink: 0;
+  color: #666;
+  min-width: 50px;
+  text-align: center;
 }
 
-.flow-connector {
-  font-size: 18px;
+.vb-canvas-area {
+  flex: 1;
+  position: relative;
+  overflow: auto;
+  background: #fafafa;
+}
+
+.vb-canvas-empty-state {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: #999;
+}
+
+.vb-canvas-empty-state p {
+  margin: 8px 0;
+  font-size: 14px;
+}
+
+.vb-empty-hint {
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* Right Panel: Builder */
+.vb-builder-panel {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  overflow: hidden;
+}
+
+.vb-builder-tabs {
+  display: flex;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.vb-tab-btn {
+  flex: 1;
+  padding: 14px 8px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 13px;
+  font-weight: 500;
   color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.vb-tab-btn.active {
+  color: #000;
+  border-bottom-color: #000;
+}
+
+.vb-tab-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* AI Builder Tab */
+.vb-ai-builder-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.vb-ai-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+
+.vb-ai-message {
+  max-width: 85%;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.vb-ai-message.assistant {
+  background: #f0f0f0;
+  color: #000;
+  align-self: flex-start;
+}
+
+.vb-message-content {
+  white-space: pre-wrap;
+}
+
+.vb-ai-input-area {
   flex-shrink: 0;
+  padding: 16px;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  background: #fff;
+}
+
+.vb-ai-input-area textarea {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  resize: none;
+}
+
+.vb-ai-input-area textarea:focus {
+  outline: none;
+  border-color: #000;
+}
+
+.vb-send-btn {
+  padding: 10px 20px;
+  background: #000;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.vb-send-btn:hover {
+  background: #333;
 }
 
 /* TEST Tab Styles */
@@ -4327,6 +5071,387 @@ textarea.input-field {
   padding: 6px 10px;
   border-radius: 3px;
   display: inline-block;
+}
+
+/* Test Mode Toggle */
+.test-mode-toggle {
+  display: flex;
+  gap: 0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.test-mode-toggle button {
+  padding: 8px 16px;
+  background: #fff;
+  color: #666;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-right: 1px solid #ddd;
+}
+
+.test-mode-toggle button:last-child {
+  border-right: none;
+}
+
+.test-mode-toggle button:hover:not(:disabled) {
+  background: #f5f5f5;
+}
+
+.test-mode-toggle button.active {
+  background: #000;
+  color: #fff;
+}
+
+.test-mode-toggle button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Evaluate Mode Layout */
+.evaluate-layout {
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  gap: 32px;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Question List Panel */
+.question-list-panel {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
+  overflow: hidden;
+  height: 600px;
+  max-height: calc(100vh - 350px);
+}
+
+.eval-filters {
+  padding: 16px;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #fafafa;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.filter-group select {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 13px;
+  background: #fff;
+  color: #333;
+  cursor: pointer;
+}
+
+.question-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.question-item {
+  padding: 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fff;
+}
+
+.question-item:hover {
+  border-color: #999;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.question-item.selected {
+  border-color: #000;
+  background: #fafafa;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.question-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+
+.question-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #000;
+  flex: 1;
+}
+
+.rating-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}
+
+.rating-badge.good {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.rating-badge.acceptable {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.rating-badge.poor {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.question-prompt {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.question-status {
+  font-size: 12px;
+}
+
+.status-answered {
+  color: #2e7d32;
+  font-weight: 500;
+}
+
+.status-unanswered {
+  color: #999;
+}
+
+.eval-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: #999;
+  font-size: 14px;
+}
+
+/* Evaluation Panel */
+.evaluation-panel {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
+  overflow-y: auto;
+  padding: 32px;
+  height: 600px;
+  max-height: calc(100vh - 350px);
+}
+
+.eval-content {
+  max-width: 700px;
+}
+
+.eval-section {
+  margin-bottom: 32px;
+}
+
+.eval-section h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #000;
+  margin: 0 0 12px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.eval-question {
+  font-size: 16px;
+  color: #333;
+  line-height: 1.6;
+  margin: 0;
+  padding: 16px;
+  background: #f5f5f5;
+  border-left: 3px solid #000;
+}
+
+.eval-answer p {
+  font-size: 15px;
+  color: #333;
+  line-height: 1.7;
+  margin: 0;
+  padding: 16px;
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+}
+
+.eval-no-answer {
+  padding: 24px;
+  text-align: center;
+  background: #fafafa;
+  border: 1px dashed #ddd;
+  border-radius: 4px;
+}
+
+.eval-no-answer p {
+  color: #666;
+  margin: 0 0 16px 0;
+}
+
+.content-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.content-tag {
+  font-size: 12px;
+  padding: 6px 12px;
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  color: #666;
+  font-weight: 500;
+}
+
+/* Rating Buttons */
+.rating-buttons {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.rating-btn {
+  flex: 1;
+  padding: 16px 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+}
+
+.rating-btn:hover {
+  border-color: #999;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.rating-btn.selected {
+  border-width: 2px;
+}
+
+.rating-btn.good.selected {
+  border-color: #2e7d32;
+  background: #e8f5e9;
+}
+
+.rating-btn.acceptable.selected {
+  border-color: #e65100;
+  background: #fff3e0;
+}
+
+.rating-btn.poor.selected {
+  border-color: #c62828;
+  background: #ffebee;
+}
+
+.rating-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #000;
+}
+
+.rating-key {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  background: #f0f0f0;
+  border-radius: 3px;
+  color: #666;
+}
+
+.rating-hint {
+  font-size: 12px;
+  color: #999;
+  margin: 0;
+  text-align: center;
+}
+
+/* Evaluation Notes */
+.eval-notes {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: inherit;
+  line-height: 1.6;
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+
+.eval-notes:focus {
+  outline: none;
+  border-color: #000;
+}
+
+.eval-no-selection {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #999;
+  font-size: 16px;
+}
+
+/* Scrollbar styling for question list */
+.question-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.question-list::-webkit-scrollbar-track {
+  background: #f5f5f5;
+}
+
+.question-list::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+.question-list::-webkit-scrollbar-thumb:hover {
+  background: #999;
 }
 
 /* Modal Styles */
@@ -6814,6 +7939,48 @@ textarea.input-field {
 
 /* Knowledge Tabs */
 /* Knowledge Accordion */
+/* Sources Main Sections */
+.sources-main-section {
+  margin-bottom: 32px;
+}
+
+.sources-section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #000;
+  margin: 0 0 16px 0;
+}
+
+.connected-sources-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.source-type-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.empty-state-simple {
+  padding: 24px;
+  background: #f9f9f9;
+  border: 1px dashed #ddd;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.empty-state-simple p {
+  margin: 0;
+  font-size: 14px;
+  color: #666;
+  line-height: 1.6;
+}
+
 .knowledge-accordion {
   display: flex;
   flex-direction: column;

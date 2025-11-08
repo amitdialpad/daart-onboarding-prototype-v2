@@ -39,4 +39,33 @@ body.wizard-mode-active .main-content {
   width: 100%;
   max-width: 100%;
 }
+
+/* Global style to hide sidebar when empty state mode is active */
+body.empty-state-mode .sidebar {
+  display: none !important;
+}
+
+body.empty-state-mode .app-layout {
+  display: block;
+}
+
+body.empty-state-mode .main-content {
+  width: 100%;
+  max-width: 100%;
+  padding: 0;
+}
+
+/* Global style to hide sidebar when single agent mode is active */
+body.single-agent-mode .sidebar {
+  display: none !important;
+}
+
+body.single-agent-mode .app-layout {
+  display: block;
+}
+
+body.single-agent-mode .main-content {
+  width: 100%;
+  max-width: 100%;
+}
 </style>

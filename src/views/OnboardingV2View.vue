@@ -64,6 +64,12 @@
     <!-- Step 3a: Questions Path -->
     <div v-if="currentStep === 'questions'" class="questions-screen">
       <div class="questions-container">
+        <!-- Show user's intent -->
+        <div v-if="userIntent" class="intent-context">
+          <p class="intent-label">Building agent for:</p>
+          <p class="intent-text">{{ userIntent }}</p>
+        </div>
+
         <h2>Answer a few questions</h2>
         <p class="subtitle">{{ questionsIntro }}</p>
 
@@ -107,7 +113,7 @@
 
         <div class="questions-footer">
           <button class="btn-secondary" @click="goBackToChoice">Back</button>
-          <button class="btn-primary" @click="proceedToTest" :disabled="!allQuestionsAnswered">
+          <button class="btn-primary" @click="proceedToTest">
             Continue to Test
           </button>
         </div>
@@ -117,6 +123,12 @@
     <!-- Step 3b: Knowledge Upload Path -->
     <div v-if="currentStep === 'knowledge'" class="knowledge-screen">
       <div class="knowledge-container">
+        <!-- Show user's intent -->
+        <div v-if="userIntent" class="intent-context">
+          <p class="intent-label">Building agent for:</p>
+          <p class="intent-text">{{ userIntent }}</p>
+        </div>
+
         <h2>Connect your knowledge sources</h2>
         <p class="subtitle">Add your company knowledge from files, platforms, or websites</p>
 
@@ -307,8 +319,7 @@
           <button class="btn-secondary" @click="goBackToChoice">Back</button>
           <button
             class="btn-primary"
-            @click="proceedToTest"
-            :disabled="knowledgeItems.length === 0">
+            @click="proceedToTest">
             Continue to Test
           </button>
         </div>
@@ -512,7 +523,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -523,6 +534,7 @@ const currentStep = ref('intent') // 'intent' | 'choice' | 'questions' | 'knowle
 // Step 1: Intent
 const userIntent = ref('')
 const intentError = ref('')
+const selectedScenario = ref(null)
 
 // Step 2: Path tracking
 const pathTaken = ref('') // 'questions' | 'knowledge'
@@ -818,25 +830,66 @@ const hasConfigChanges = computed(() => {
 
 // Methods
 
+onMounted(() => {
+  // Check if coming from build-agent screen (new flow)
+  const buildData = JSON.parse(localStorage.getItem('daart-building-agent') || '{}')
+  if (buildData.intent && buildData.selectedMethod) {
+    // Skip intent step, go directly to selected method
+    userIntent.value = buildData.intent
+    selectedScenario.value = buildData.scenarioId ? { id: buildData.scenarioId } : null
+
+    if (buildData.selectedMethod === 'questions') {
+      // Analyze intent and generate questions
+      analyzeIntent()
+      // Move to questions step
+      chooseQuestionsPath()
+      return
+    } else if (buildData.selectedMethod === 'knowledge') {
+      // Analyze intent for context
+      analyzeIntent()
+      // Move to knowledge step
+      chooseKnowledgePath()
+      return
+    }
+  }
+
+  // Check if user selected a scenario from the empty state (old flow)
+  const storedScenario = localStorage.getItem('daart-selected-scenario')
+  if (storedScenario) {
+    selectedScenario.value = JSON.parse(storedScenario)
+    userIntent.value = selectedScenario.value.intent
+    // Clear it after loading
+    localStorage.removeItem('daart-selected-scenario')
+  }
+})
+
 function analyzeIntent() {
   if (!userIntent.value.trim()) {
     intentError.value = 'Please describe what you want your agent to do'
     return
   }
 
-  // Detect domain from intent
-  const intent = userIntent.value.toLowerCase()
-
-  if (intent.includes('appointment') || intent.includes('booking') || intent.includes('schedule') || intent.includes('calendar')) {
-    detectedDomain.value = 'scheduling'
-  } else if (intent.includes('support') || intent.includes('help') || intent.includes('customer service') || intent.includes('answer questions')) {
-    detectedDomain.value = 'support'
-  } else if (intent.includes('sales') || intent.includes('pricing') || intent.includes('demo') || intent.includes('qualify leads')) {
-    detectedDomain.value = 'sales'
-  } else if (intent.includes('order') || intent.includes('shipping') || intent.includes('track') || intent.includes('return')) {
-    detectedDomain.value = 'orders'
+  // Detect domain from intent (or use scenario ID if available)
+  if (selectedScenario.value) {
+    detectedDomain.value = selectedScenario.value.id
   } else {
-    detectedDomain.value = 'general'
+    const intent = userIntent.value.toLowerCase()
+
+    if (intent.includes('appointment') || intent.includes('booking') || intent.includes('schedule') || intent.includes('calendar')) {
+      detectedDomain.value = 'appointments'
+    } else if (intent.includes('reminder')) {
+      detectedDomain.value = 'reminders'
+    } else if (intent.includes('support') || intent.includes('help') || intent.includes('customer service') || intent.includes('answer questions')) {
+      detectedDomain.value = 'support'
+    } else if (intent.includes('sales') || intent.includes('pricing') || intent.includes('demo') || intent.includes('qualify leads')) {
+      detectedDomain.value = 'sales'
+    } else if (intent.includes('order') || intent.includes('shipping') || intent.includes('track') || intent.includes('return')) {
+      detectedDomain.value = 'orders'
+    } else if (intent.includes('reservation') || intent.includes('restaurant') || intent.includes('table') || intent.includes('waitlist')) {
+      detectedDomain.value = 'reservations'
+    } else {
+      detectedDomain.value = 'general'
+    }
   }
 
   currentStep.value = 'choice'
@@ -851,6 +904,15 @@ function goBackToIntent() {
 }
 
 function goBackToChoice() {
+  // Check if we came from build-agent screen
+  const buildData = JSON.parse(localStorage.getItem('daart-building-agent') || '{}')
+  if (buildData.intent && buildData.selectedMethod) {
+    // Go back to build-agent screen for any method (questions or knowledge)
+    router.push('/build-agent')
+    return
+  }
+
+  // Otherwise go back to choice step (old flow)
   currentStep.value = 'choice'
 }
 
@@ -858,7 +920,7 @@ function chooseQuestionsPath() {
   pathTaken.value = 'questions'
 
   // Generate questions based on domain
-  if (detectedDomain.value === 'scheduling') {
+  if (detectedDomain.value === 'appointments') {
     questionsIntro.value = 'I see you need appointment scheduling. Let me ask a few questions to set this up properly.'
     clarifyingQuestions.value = [
       {
@@ -902,6 +964,45 @@ function chooseQuestionsPath() {
         question: 'Any special scheduling rules or requirements?',
         placeholder: 'e.g., No same-day bookings, Require 24hr cancellation notice, etc.',
         hint: 'Optional - any specific policies we should know about'
+      }
+    ]
+  } else if (detectedDomain.value === 'reminders') {
+    questionsIntro.value = 'I see you need to send reminders. Let me ask a few questions to set this up properly.'
+    clarifyingQuestions.value = [
+      {
+        id: 'reminder_type',
+        type: 'select',
+        question: 'What type of reminders will you send?',
+        options: ['Appointments', 'Payments', 'Renewals', 'Deadlines', 'Multiple types'],
+        hint: ''
+      },
+      {
+        id: 'reminder_timing',
+        type: 'textarea',
+        question: 'When should reminders be sent?',
+        placeholder: 'e.g., 24 hours before appointment, 3 days before payment due',
+        hint: 'Describe your reminder schedule'
+      },
+      {
+        id: 'reminder_channels',
+        type: 'select',
+        question: 'How should reminders be delivered?',
+        options: ['SMS only', 'Voice call only', 'SMS then voice if no response', 'Both SMS and voice'],
+        hint: ''
+      },
+      {
+        id: 'data_source',
+        type: 'text',
+        question: 'Where will the reminder data come from?',
+        placeholder: 'e.g., Google Calendar, Stripe, QuickBooks, Spreadsheet',
+        hint: 'We can integrate with your existing system'
+      },
+      {
+        id: 'confirmation_needed',
+        type: 'select',
+        question: 'Do customers need to confirm receipt?',
+        options: ['Yes - require confirmation', 'No - just notify', 'Yes - and allow rescheduling'],
+        hint: ''
       }
     ]
   } else if (detectedDomain.value === 'support') {
@@ -1021,6 +1122,52 @@ function chooseQuestionsPath() {
         hint: ''
       }
     ]
+  } else if (detectedDomain.value === 'reservations') {
+    questionsIntro.value = 'I see you need restaurant reservations. Let me ask a few questions to set this up properly.'
+    clarifyingQuestions.value = [
+      {
+        id: 'restaurant_name',
+        type: 'text',
+        question: 'What\'s your restaurant name?',
+        placeholder: 'e.g., Mario\'s Italian Kitchen',
+        hint: ''
+      },
+      {
+        id: 'seating_capacity',
+        type: 'text',
+        question: 'What\'s your seating capacity?',
+        placeholder: 'e.g., 50 seats, 20 tables',
+        hint: 'This helps manage availability'
+      },
+      {
+        id: 'reservation_system',
+        type: 'select',
+        question: 'Do you use a reservation system?',
+        options: ['OpenTable', 'Resy', 'Yelp Reservations', 'Spreadsheet', 'None yet'],
+        hint: 'We can integrate with your existing system'
+      },
+      {
+        id: 'business_hours',
+        type: 'text',
+        question: 'What are your operating hours?',
+        placeholder: 'e.g., Tue-Sun 5pm-10pm',
+        hint: 'When do you accept reservations?'
+      },
+      {
+        id: 'party_size_limits',
+        type: 'text',
+        question: 'Any party size limits or special rules?',
+        placeholder: 'e.g., Max 8 people per table, Groups of 6+ need to call',
+        hint: ''
+      },
+      {
+        id: 'additional_features',
+        type: 'textarea',
+        question: 'What else should the agent help with?',
+        placeholder: 'e.g., Take takeout orders, Answer menu questions, Manage waitlist',
+        hint: 'Optional - any additional capabilities needed'
+      }
+    ]
   } else {
     // General purpose
     questionsIntro.value = 'Let me ask a few questions to set up your agent properly.'
@@ -1084,6 +1231,7 @@ function handleFileUpload(event) {
     const newFile = {
       id: Date.now() + Math.random(),
       name: file.name,
+      type: 'Document',
       size: file.size,
       status: 'ready',
       content: ''
@@ -1105,6 +1253,8 @@ function addTextSnippet() {
 
   const snippet = {
     id: Date.now(),
+    name: `Text snippet ${textSnippets.value.length + 1}`,
+    type: 'Text Content',
     title: `Text snippet ${textSnippets.value.length + 1}`,
     content: pasteText.value.trim()
   }
@@ -1122,6 +1272,8 @@ function addWebsite() {
 
   const site = {
     id: Date.now(),
+    name: websiteUrl.value.trim(),
+    type: 'Website',
     url: websiteUrl.value.trim(),
     status: 'ready',
     pageCount: crawlSubpages.value ? Math.floor(Math.random() * 40) + 10 : 1
@@ -1180,6 +1332,7 @@ function handleConversationUpload(event) {
     const newConversation = {
       id: Date.now() + Math.random(),
       name: file.name,
+      type: 'Conversations',
       size: file.size,
       status: 'ready',
       conversationCount: Math.floor(Math.random() * 200) + 50 // Simulated count
@@ -1197,29 +1350,23 @@ function removeConversationFile(id) {
 }
 
 function proceedToTest() {
-  // Generate plan based on path taken
+  // Save configuration data to localStorage for test view
+  const buildData = JSON.parse(localStorage.getItem('daart-building-agent') || '{}')
+
+  // Add questions or knowledge data
   if (pathTaken.value === 'questions') {
-    generatePlanFromQuestions()
+    buildData.questions = answers.value
   } else {
-    generatePlanFromKnowledge()
+    buildData.knowledge = knowledgeItems.value
   }
 
-  // Initialize editable config
-  editableAgentName.value = generatedPlan.value.agentName
-  editableIntent.value = userIntent.value
+  // Save integrations if any
+  buildData.integrations = connectedIntegrations.value || []
 
-  // Save original config for change detection
-  originalConfig.value = {
-    agentName: generatedPlan.value.agentName,
-    intent: userIntent.value,
-    answers: pathTaken.value === 'questions' ? { ...answers.value } : {}
-  }
+  localStorage.setItem('daart-building-agent', JSON.stringify(buildData))
 
-  // Reset chat
-  chatMessages.value = []
-  chatInput.value = ''
-
-  currentStep.value = 'test'
+  // Navigate to unified test view
+  router.push('/test-agent')
 }
 
 function generatePlanFromQuestions() {
@@ -1822,6 +1969,32 @@ function goToWorkspace() {
   margin: 0 auto;
 }
 
+/* Intent Context in Questions */
+.questions-container .intent-context {
+  margin-bottom: 24px;
+  padding: 12px 16px;
+  background: #f8f8f8;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  text-align: left;
+}
+
+.questions-container .intent-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 6px 0;
+}
+
+.questions-container .intent-text {
+  font-size: 14px;
+  color: #000;
+  line-height: 1.5;
+  margin: 0;
+}
+
 .questions-container h2 {
   font-size: 20px;
   font-weight: 600;
@@ -1904,6 +2077,32 @@ function goToWorkspace() {
 .knowledge-screen {
   max-width: 800px;
   margin: 0 auto;
+}
+
+/* Intent Context in Knowledge */
+.knowledge-container .intent-context {
+  margin-bottom: 24px;
+  padding: 12px 16px;
+  background: #f8f8f8;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  text-align: left;
+}
+
+.knowledge-container .intent-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 6px 0;
+}
+
+.knowledge-container .intent-text {
+  font-size: 14px;
+  color: #000;
+  line-height: 1.5;
+  margin: 0;
 }
 
 .knowledge-container h2 {

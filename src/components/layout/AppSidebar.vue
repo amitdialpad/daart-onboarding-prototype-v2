@@ -6,6 +6,13 @@
     </div>
 
     <nav class="sidebar-nav">
+      <!-- Home Section -->
+      <div class="nav-section">
+        <router-link to="/home" class="section-header-link" :class="{ active: currentRoute === '/home' }">
+          <span class="section-title">Home</span>
+        </router-link>
+      </div>
+
       <!-- Agents Section -->
       <div class="nav-section">
         <div class="section-header" @click="toggleSection('agents')">
@@ -16,7 +23,7 @@
         <!-- Agents Content -->
         <div v-if="sectionsExpanded.agents" class="section-content">
           <div v-if="allAgents.length === 0" class="empty-message">
-            <a href="#/onboarding-v2" class="create-agent-link">+ Create First Agent</a>
+            <a href="#" class="create-agent-link" @click.prevent="createNewAgent">+ Create First Agent</a>
           </div>
 
           <div v-for="agent in allAgents" :key="agent.id" class="agent-item">
@@ -89,7 +96,7 @@
             </div>
           </div>
 
-          <a href="#/onboarding-v2" class="create-agent-link" v-if="allAgents.length > 0">+ Create Agent</a>
+          <a href="#" class="create-agent-link" v-if="allAgents.length > 0" @click.prevent="createNewAgent">+ Create Agent</a>
         </div>
       </div>
 
@@ -251,6 +258,25 @@ function goToAgent(agent) {
     defaultTab = 'monitor'
   }
   router.push(`/agents-v2/${agent.id}/${defaultTab}`)
+}
+
+function createNewAgent() {
+  // Save current agents to temp storage so user can cancel
+  const currentAgents = localStorage.getItem('daart-agents')
+  if (currentAgents) {
+    localStorage.setItem('daart-agents-backup', currentAgents)
+  }
+
+  // Clear any existing build data to start fresh
+  localStorage.removeItem('daart-building-agent')
+  localStorage.removeItem('daart-selected-scenario')
+  localStorage.removeItem('daart-agents')
+
+  // Set flag to show this is a "create new agent" flow
+  localStorage.setItem('daart-creating-new-agent', 'true')
+
+  // Navigate to home - empty state will show intent capture
+  router.push('/home')
 }
 
 function toggleSection(section) {

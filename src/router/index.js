@@ -3,23 +3,18 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 const routes = [
   {
     path: '/',
-    redirect: () => {
-      // Check if agents exist (use V2 onboarding flow)
-      const agents = JSON.parse(localStorage.getItem('daart-agents') || '[]')
-      if (agents.length > 0) {
-        // If agents exist, go to first agent's workspace
-        const agent = agents[0]
-        let defaultTab = 'build'
-        if (agent.status === 'live') {
-          defaultTab = 'monitor'
-        } else if (agent.status === 'draft' && agent.hasBeenPublished) {
-          defaultTab = 'monitor'
-        }
-        return `/agents-v2/${agent.id}/${defaultTab}`
+    redirect: '/home'
+  },
+  {
+    path: '/home',
+    component: () => import('../components/layout/AppLayout.vue'),
+    children: [
+      {
+        path: '',
+        name: 'AgentHub',
+        component: () => import('../views/AgentHubView.vue')
       }
-      // Otherwise go to onboarding
-      return '/onboarding-v2'
-    }
+    ]
   },
   {
     path: '/signup',
@@ -55,7 +50,36 @@ const routes = [
   {
     path: '/onboarding-v2',
     name: 'OnboardingV2',
-    component: () => import('../views/OnboardingV2View.vue')
+    component: () => import('../views/OnboardingV2View.vue'),
+    beforeEnter: (to, from, next) => {
+      // Only allow access if user has selected an intent and method
+      const buildData = JSON.parse(localStorage.getItem('daart-building-agent') || '{}')
+      if (!buildData.intent || !buildData.selectedMethod) {
+        next('/home')
+      } else {
+        next()
+      }
+    }
+  },
+  {
+    path: '/agent-setup-animation',
+    name: 'AgentSetupAnimation',
+    component: () => import('../views/AgentSetupAnimation.vue')
+  },
+  {
+    path: '/build-agent',
+    name: 'BuildAgent',
+    component: () => import('../views/BuildAgentView.vue')
+  },
+  {
+    path: '/visual-workflow',
+    name: 'VisualWorkflow',
+    component: () => import('../views/VisualWorkflowView.vue')
+  },
+  {
+    path: '/test-agent',
+    name: 'TestAgent',
+    component: () => import('../views/AgentTestView.vue')
   },
   {
     path: '/agents-v2',
@@ -81,6 +105,12 @@ const routes = [
         name: 'AgentTestV2',
         component: () => import('../views/AgentsWorkspaceV2View.vue'),
         props: { activeTab: 'test' }
+      },
+      {
+        path: ':id/evaluate',
+        name: 'AgentEvaluateV2',
+        component: () => import('../views/AgentsWorkspaceV2View.vue'),
+        props: { activeTab: 'evaluate' }
       },
       {
         path: ':id/monitor',
