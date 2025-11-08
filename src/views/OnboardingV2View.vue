@@ -1967,6 +1967,12 @@ function goToWorkspace() {
 .questions-screen {
   max-width: 800px;
   margin: 0 auto;
+  padding: 40px 0;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 /* Intent Context in Questions */
@@ -2064,13 +2070,31 @@ function goToWorkspace() {
   border-color: #000;
 }
 
+.questions-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.questions-list {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 24px;
+  padding-right: 8px;
+}
+
 .questions-footer {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  margin-top: 32px;
-  padding-top: 24px;
+  padding: 24px 0;
   border-top: 1px solid #e0e0e0;
+  background: #fff;
+  position: sticky;
+  bottom: 0;
+  margin-top: auto;
+  flex-shrink: 0;
 }
 
 /* Knowledge Upload Screen */

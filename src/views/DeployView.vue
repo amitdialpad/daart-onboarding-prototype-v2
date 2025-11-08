@@ -68,127 +68,172 @@
     <!-- Deploy Review State (Draft Agents) -->
     <div v-else class="deploy-content">
       <div class="deploy-header">
-        <button class="back-button" @click="goBack">← Back</button>
-        <h1>Review & Publish</h1>
-        <p class="deploy-description">Confirm your agent configuration before publishing it live.</p>
+        <div class="header-left">
+          <button class="back-button" @click="goBack">← Back</button>
+          <h1>Review & Publish</h1>
+          <p class="deploy-description">Confirm your agent configuration before publishing it live.</p>
+        </div>
+        <div class="header-right">
+          <button
+            class="btn-publish-header"
+            @click="publishAgent"
+            :disabled="!canPublish">
+            {{ canPublish ? 'Publish Agent' : 'Complete Configuration' }}
+          </button>
+          <button class="btn-cancel-header" @click="goBack">
+            Cancel
+          </button>
+        </div>
       </div>
 
       <div class="deploy-layout">
-        <!-- Main Content -->
-        <div class="deploy-main">
+        <!-- Main Content - Right Column (Primary Focus) -->
+        <div class="deploy-primary">
+          <!-- What will this cost? -->
+          <div class="primary-box cost-box">
+            <h2>What will this cost?</h2>
+
+            <div class="cost-section">
+              <div class="cost-item-large">
+                <span class="cost-label">During free trial</span>
+                <span class="cost-value">$0</span>
+                <span class="cost-detail">847 conversations remaining</span>
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="cost-section">
+              <div class="cost-item-large">
+                <span class="cost-label">After trial ends</span>
+                <span class="cost-value">${{ agent.agentType === 'phone' ? '0.10' : '0.05' }}</span>
+                <span class="cost-detail">per conversation</span>
+              </div>
+            </div>
+
+            <div class="cost-details-list">
+              <div class="cost-detail-item">
+                <span class="detail-icon">✓</span>
+                <span v-if="agent.agentType === 'phone'">Charged per minute of voice interaction</span>
+                <span v-else>Charged per chat session started</span>
+              </div>
+              <div class="cost-detail-item">
+                <span class="detail-icon">✓</span>
+                <span>No setup fees or monthly minimums</span>
+              </div>
+              <div class="cost-detail-item">
+                <span class="detail-icon">✓</span>
+                <span>Pay only for actual conversations</span>
+              </div>
+            </div>
+
+            <p class="cost-note">Based on typical usage, most customers spend $150-$300/month</p>
+          </div>
+
+          <!-- When will you be charged? -->
+          <div class="primary-box billing-box">
+            <h2>When will you be charged?</h2>
+
+            <div class="billing-timeline">
+              <div class="timeline-item current">
+                <div class="timeline-marker"></div>
+                <div class="timeline-content">
+                  <h3>Right now</h3>
+                  <p><strong>No charge.</strong> You're in your free trial period.</p>
+                </div>
+              </div>
+
+              <div class="timeline-item future">
+                <div class="timeline-marker"></div>
+                <div class="timeline-content">
+                  <h3>In 23 days</h3>
+                  <p>We'll notify you 7 days before your trial ends. You can add credits or pause your agent.</p>
+                </div>
+              </div>
+
+              <div class="timeline-item future">
+                <div class="timeline-marker"></div>
+                <div class="timeline-content">
+                  <h3>After trial</h3>
+                  <p>Charges apply only when your agent handles conversations. You control when to add credits.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="trial-balance-banner">
+              <div class="balance-info">
+                <span class="balance-label">Current trial balance:</span>
+                <span class="balance-amount">$445.00</span>
+              </div>
+              <span class="balance-note">Covers ~4,450 conversations</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Secondary Content - Left Column (Configuration Summary) -->
+        <div class="deploy-secondary">
           <!-- Agent Summary -->
-          <div class="config-section">
-            <h2>Agent Overview</h2>
-            <div class="summary-grid">
-              <div class="summary-item">
+          <div class="config-section-compact">
+            <h3>Agent Overview</h3>
+            <div class="summary-list">
+              <div class="summary-item-compact">
                 <span class="summary-label">Name</span>
                 <span class="summary-value">{{ agent.name }}</span>
               </div>
-              <div class="summary-item">
+              <div class="summary-item-compact">
                 <span class="summary-label">Type</span>
                 <span class="summary-value">{{ agent.agentType === 'phone' ? 'Voice Agent' : 'Digital Agent' }}</span>
               </div>
-              <div class="summary-item">
+              <div class="summary-item-compact">
                 <span class="summary-label">Channels</span>
-                <span class="summary-value">
-                  {{ getChannelsSummary() }}
-                </span>
+                <span class="summary-value">{{ getChannelsSummary() }}</span>
               </div>
             </div>
           </div>
 
           <!-- Configuration Completeness -->
-          <div class="config-section">
-            <h2>Configuration Checklist</h2>
-            <div class="checklist">
-              <div class="checklist-item" :class="{ complete: agent.instructions }">
-                <span class="checkbox">{{ agent.instructions ? '✓' : '○' }}</span>
+          <div class="config-section-compact">
+            <h3>Configuration</h3>
+            <div class="checklist-compact">
+              <div class="checklist-item-compact" :class="{ complete: agent.instructions }">
+                <span class="checkbox-compact">{{ agent.instructions ? '✓' : '○' }}</span>
                 <span>Instructions configured</span>
               </div>
-              <div class="checklist-item" :class="{ complete: agent.knowledgeBase }">
-                <span class="checkbox">{{ agent.knowledgeBase ? '✓' : '○' }}</span>
+              <div class="checklist-item-compact" :class="{ complete: agent.knowledgeBase }">
+                <span class="checkbox-compact">{{ agent.knowledgeBase ? '✓' : '○' }}</span>
                 <span>Knowledge base added</span>
               </div>
-              <div class="checklist-item" :class="{ complete: hasSkills }">
-                <span class="checkbox">{{ hasSkills ? '✓' : '○' }}</span>
+              <div class="checklist-item-compact" :class="{ complete: hasSkills }">
+                <span class="checkbox-compact">{{ hasSkills ? '✓' : '○' }}</span>
                 <span>Skills configured</span>
               </div>
-              <div v-if="agent.agentType === 'phone'" class="checklist-item" :class="{ complete: agent.phoneNumber }">
-                <span class="checkbox">{{ agent.phoneNumber ? '✓' : '○' }}</span>
+              <div v-if="agent.agentType === 'phone'" class="checklist-item-compact" :class="{ complete: agent.phoneNumber }">
+                <span class="checkbox-compact">{{ agent.phoneNumber ? '✓' : '○' }}</span>
                 <span>Phone number assigned</span>
               </div>
-              <div v-if="agent.agentType === 'chat' && agent.smsEnabled" class="checklist-item" :class="{ complete: agent.smsNumber }">
-                <span class="checkbox">{{ agent.smsNumber ? '✓' : '○' }}</span>
+              <div v-if="agent.agentType === 'chat' && agent.smsEnabled" class="checklist-item-compact" :class="{ complete: agent.smsNumber }">
+                <span class="checkbox-compact">{{ agent.smsNumber ? '✓' : '○' }}</span>
                 <span>SMS number configured</span>
               </div>
             </div>
 
             <!-- Warning if SMS enabled but not configured -->
-            <div v-if="agent.agentType === 'chat' && agent.smsEnabled && !agent.smsNumber" class="warning-box">
-              ⚠️ SMS is enabled but no phone number is configured. Please add a phone number in the Build tab before publishing.
+            <div v-if="agent.agentType === 'chat' && agent.smsEnabled && !agent.smsNumber" class="warning-box-compact">
+              ⚠️ SMS is enabled but no phone number is configured.
             </div>
           </div>
 
           <!-- What Happens When You Publish -->
-          <div class="config-section">
-            <h2>What happens when you publish?</h2>
-            <ul class="publish-info-list">
-              <li v-if="agent.agentType === 'phone'">Your agent will start answering calls immediately on {{ agent.phoneNumber || 'your assigned phone number' }}</li>
-              <li v-else>Your chat widget will go live on your website</li>
-              <li v-if="agent.agentType === 'chat' && agent.smsEnabled">SMS messaging will be enabled on {{ agent.smsNumber || 'your assigned number' }}</li>
-              <li>All conversations will be recorded and visible in the Monitor tab</li>
-              <li>You can unpublish your agent at any time to make changes</li>
-              <li>Usage will be tracked and billed according to your plan</li>
+          <div class="config-section-compact collapsible">
+            <h3>What happens when you publish?</h3>
+            <ul class="publish-info-list-compact">
+              <li v-if="agent.agentType === 'phone'">Starts answering calls on {{ agent.phoneNumber || 'assigned number' }}</li>
+              <li v-else>Chat widget goes live on your website</li>
+              <li v-if="agent.agentType === 'chat' && agent.smsEnabled">SMS messaging enabled</li>
+              <li>Conversations recorded in Monitor tab</li>
+              <li>Can unpublish anytime to make changes</li>
             </ul>
           </div>
-        </div>
-
-        <!-- Sidebar -->
-        <div class="deploy-sidebar">
-          <!-- Trial Status -->
-          <div class="sidebar-box">
-            <h3>Free Trial Active</h3>
-            <div class="trial-info">
-              <div class="trial-stat">
-                <span class="stat-label">Conversations Remaining</span>
-                <span class="stat-value">847</span>
-              </div>
-              <div class="trial-stat">
-                <span class="stat-label">Days Remaining</span>
-                <span class="stat-value">23 days</span>
-              </div>
-              <div class="trial-stat">
-                <span class="stat-label">Current Balance</span>
-                <span class="stat-value">$445.00</span>
-              </div>
-            </div>
-            <p class="trial-note">Trial ends when you reach 1,000 conversations OR 30 days (whichever comes first).</p>
-          </div>
-
-          <!-- Billing -->
-          <div class="sidebar-box">
-            <h3>Estimated Usage Cost</h3>
-            <p>Based on your current configuration:</p>
-            <ul class="billing-list">
-              <li>${{ agent.agentType === 'phone' ? '0.10' : '0.05' }} per conversation</li>
-              <li v-if="agent.agentType === 'phone'">Charged per minute of voice</li>
-              <li v-else>Charged per chat session</li>
-              <li>No setup fees or minimums</li>
-            </ul>
-            <p style="margin-top: 12px; font-size: 13px; color: #666;">You can add more credits anytime from the Billing page.</p>
-          </div>
-
-          <!-- Publish Button -->
-          <button
-            class="btn-publish"
-            @click="publishAgent"
-            :disabled="!canPublish">
-            {{ canPublish ? 'Publish Agent' : 'Complete Configuration' }}
-          </button>
-
-          <button class="btn-cancel" @click="goBack">
-            Cancel
-          </button>
         </div>
       </div>
     </div>
@@ -296,7 +341,25 @@ function goBack() {
 }
 
 .deploy-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 40px;
   margin-bottom: 40px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.header-left {
+  flex: 1;
+}
+
+.header-right {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  flex-shrink: 0;
+  padding-top: 8px;
 }
 
 .back-button {
@@ -326,28 +389,302 @@ function goBack() {
   margin: 0;
 }
 
-.deploy-layout {
-  display: grid;
-  grid-template-columns: 1fr 350px;
-  gap: 40px;
+/* Header Buttons */
+.btn-publish-header {
+  padding: 16px 32px;
+  background: #000;
+  color: #fff;
+  border: none;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-.deploy-main {
+.btn-publish-header:hover:not(:disabled) {
+  background: #333;
+}
+
+.btn-publish-header:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-cancel-header {
+  padding: 16px 24px;
+  background: #fff;
+  color: #666;
+  border: 1px solid #ddd;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-cancel-header:hover {
+  border-color: #000;
+  color: #000;
+}
+
+.deploy-layout {
+  display: grid;
+  grid-template-columns: 500px 1fr;
+  gap: 48px;
+  align-items: start;
+}
+
+/* Primary Column (Right - Billing/Cost Focus) */
+.deploy-primary {
   display: flex;
   flex-direction: column;
   gap: 32px;
 }
 
-.config-section {
-  padding: 32px;
+.primary-box {
+  padding: 40px;
+  border: 2px solid #000;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.primary-box h2 {
+  font-size: 28px;
+  font-weight: 600;
+  margin: 0 0 32px 0;
+  color: #000;
+}
+
+.cost-section {
+  margin-bottom: 24px;
+}
+
+.cost-item-large {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cost-label {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cost-value {
+  font-size: 48px;
+  font-weight: 700;
+  color: #000;
+  line-height: 1;
+}
+
+.cost-detail {
+  font-size: 16px;
+  color: #666;
+}
+
+.divider {
+  height: 1px;
+  background: #ddd;
+  margin: 24px 0;
+}
+
+.cost-details-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.cost-detail-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #333;
+}
+
+.detail-icon {
+  font-size: 16px;
+  color: #4caf50;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.cost-note {
+  margin-top: 24px;
+  padding: 16px;
+  background: #f0f9ff;
+  border-left: 3px solid #0066cc;
+  font-size: 14px;
+  color: #004080;
+  line-height: 1.6;
+}
+
+/* Billing Timeline */
+.billing-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.timeline-item {
+  display: flex;
+  gap: 16px;
+  position: relative;
+}
+
+.timeline-item:not(:last-child):before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 24px;
+  bottom: -24px;
+  width: 2px;
+  background: #ddd;
+}
+
+.timeline-marker {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 3px solid #ddd;
+  background: #fff;
+  flex-shrink: 0;
+  margin-top: 4px;
+  position: relative;
+  z-index: 1;
+}
+
+.timeline-item.current .timeline-marker {
+  border-color: #4caf50;
+  background: #4caf50;
+}
+
+.timeline-content h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: #000;
+}
+
+.timeline-content p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #666;
+  margin: 0;
+}
+
+.trial-balance-banner {
+  padding: 20px;
+  background: #f0f9ff;
+  border: 1px solid #0066cc;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.balance-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.balance-label {
+  font-size: 14px;
+  color: #004080;
+  font-weight: 500;
+}
+
+.balance-amount {
+  font-size: 24px;
+  font-weight: 700;
+  color: #004080;
+}
+
+.balance-note {
+  font-size: 13px;
+  color: #004080;
+}
+
+/* Primary Buttons */
+.btn-publish-primary {
+  width: 100%;
+  padding: 20px 32px;
+  background: #000;
+  color: #fff;
+  border: none;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-publish-primary:hover:not(:disabled) {
+  background: #333;
+}
+
+.btn-publish-primary:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-cancel-primary {
+  width: 100%;
+  padding: 14px 32px;
+  background: #fff;
+  color: #666;
+  border: 1px solid #ddd;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-cancel-primary:hover {
+  border-color: #000;
+  color: #000;
+}
+
+/* Secondary Column (Left - Configuration Summary) */
+.deploy-secondary {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.config-section-compact {
+  padding: 24px;
   border: 1px solid #ddd;
   background: #fafafa;
 }
 
-.config-section h2 {
-  font-size: 20px;
+.config-section-compact h3 {
+  font-size: 16px;
   font-weight: 600;
-  margin: 0 0 20px 0;
+  margin: 0 0 16px 0;
+  color: #000;
+}
+
+.summary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.summary-item-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .summary-grid {
@@ -363,7 +700,7 @@ function goBack() {
 }
 
 .summary-label {
-  font-size: 12px;
+  font-size: 11px;
   color: #666;
   text-transform: uppercase;
   font-weight: 500;
@@ -371,75 +708,77 @@ function goBack() {
 }
 
 .summary-value {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   color: #000;
 }
 
-.checklist {
+.checklist-compact {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
-.checklist-item {
+.checklist-item-compact {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
+  gap: 10px;
+  padding: 10px;
   background: #fff;
   border: 1px solid #ddd;
   color: #666;
+  font-size: 13px;
 }
 
-.checklist-item.complete {
+.checklist-item-compact.complete {
   border-color: #4caf50;
   background: #f1f8f4;
   color: #000;
 }
 
-.checkbox {
-  font-size: 18px;
+.checkbox-compact {
+  font-size: 14px;
   font-weight: 600;
   color: #4caf50;
 }
 
-.checklist-item:not(.complete) .checkbox {
+.checklist-item-compact:not(.complete) .checkbox-compact {
   color: #ccc;
 }
 
-.warning-box {
-  margin-top: 16px;
-  padding: 16px;
+.warning-box-compact {
+  margin-top: 12px;
+  padding: 12px;
   background: #fff3cd;
   border: 1px solid #ffc107;
   color: #856404;
-  font-size: 14px;
+  font-size: 12px;
   line-height: 1.5;
 }
 
-.publish-info-list {
+.publish-info-list-compact {
   list-style: none;
   padding: 0;
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
-.publish-info-list li {
-  padding-left: 24px;
+.publish-info-list-compact li {
+  padding-left: 20px;
   position: relative;
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 13px;
+  line-height: 1.5;
   color: #333;
 }
 
-.publish-info-list li:before {
+.publish-info-list-compact li:before {
   content: '•';
   position: absolute;
   left: 8px;
   color: #666;
+  font-size: 12px;
 }
 
 /* Review Content */

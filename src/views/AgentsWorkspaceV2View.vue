@@ -5144,7 +5144,7 @@ textarea.input-field {
 
 .filter-group {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 6px;
 }
 

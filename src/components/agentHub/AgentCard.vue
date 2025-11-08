@@ -56,9 +56,9 @@
 
       <!-- Actions Row -->
       <div class="actions-row" @click.stop>
-        <a :href="`#/agents-v2/${agent.id}/build`" class="action-link" @click.stop>
-          Build →
-        </a>
+        <button class="action-btn action-btn-secondary" @click="() => router.push(`/agents-v2/${agent.id}/build`)">
+          Build
+        </button>
         <button class="action-btn" @click="primaryAction.handler">
           {{ primaryAction.label }}
         </button>
@@ -294,25 +294,14 @@ function toggleMenu() {
   gap: 12px;
 }
 
-.action-link {
-  font-size: 13px;
-  font-weight: 500;
-  color: #666;
-  text-decoration: none;
-  transition: color 0.2s;
-}
-
-.action-link:hover {
-  color: #000;
-}
-
 .action-btn {
-  padding: 8px 20px;
+  flex: 1;
+  padding: 10px 20px;
   background: #000;
   color: #fff;
   border: none;
   border-radius: 4px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
@@ -320,6 +309,17 @@ function toggleMenu() {
 
 .action-btn:hover {
   background: #333;
+}
+
+.action-btn-secondary {
+  background: #fff;
+  color: #000;
+  border: 1px solid #ddd;
+}
+
+.action-btn-secondary:hover {
+  background: #fafafa;
+  border-color: #000;
 }
 
 /* Simplified Card Styles */
