@@ -191,6 +191,8 @@ function generateActivity() {
 }
 
 function goToOnboarding(scenario) {
+  console.log('[AgentHubView] goToOnboarding called with scenario:', scenario)
+
   // If scenario is provided (from empty state), store it and go to method selection
   if (scenario) {
     localStorage.setItem('daart-building-agent', JSON.stringify({
@@ -203,6 +205,8 @@ function goToOnboarding(scenario) {
     // No scenario - user clicked "Create Agent" from hub with existing agents
     // Back up current agents and show empty state for new agent creation
     const currentAgents = localStorage.getItem('daart-agents')
+    console.log('[AgentHubView] Current agents:', currentAgents)
+
     if (currentAgents) {
       localStorage.setItem('daart-agents-backup', currentAgents)
     }
@@ -222,7 +226,9 @@ function goToOnboarding(scenario) {
     // Reload to show empty state
     // Preserve base path for GitHub Pages deployment
     const basePath = window.location.pathname.split('#')[0]
-    window.location.href = window.location.origin + basePath + '#/home'
+    const newUrl = window.location.origin + basePath + '#/home'
+    console.log('[AgentHubView] Navigating to:', newUrl)
+    window.location.href = newUrl
   }
 }
 
