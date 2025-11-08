@@ -11,7 +11,7 @@
       <!-- Header Row: Agents title and Create Agent button -->
       <div v-if="agents.length > 1 || (agents.length === 1 && !showSuccessView)" class="main-header">
         <h1 class="main-title">Agents ({{ agents.length }})</h1>
-        <button class="btn-create-agent" @click="goToOnboarding">+ Create Agent</button>
+        <button class="btn-create-agent" @click="() => goToOnboarding()">+ Create Agent</button>
       </div>
 
       <!-- Main Layout -->
