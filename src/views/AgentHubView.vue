@@ -219,7 +219,9 @@ function goToOnboarding(scenario) {
     localStorage.removeItem('daart-just-completed-onboarding')
 
     // Reload to show empty state
-    window.location.reload()
+    // Preserve base path for GitHub Pages deployment
+    const basePath = window.location.pathname.split('#')[0]
+    window.location.href = window.location.origin + basePath + '#/home'
   }
 }
 
