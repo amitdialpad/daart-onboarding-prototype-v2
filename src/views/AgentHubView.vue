@@ -6,10 +6,16 @@
     <!-- Has Agents: Normal Layout -->
     <template v-else>
       <!-- Trial Banner (less prominent) -->
-      <TrialBanner v-if="isInTrial && agents.length > 1" />
+      <TrialBanner v-if="isInTrial && !showSuccessView" />
+
+      <!-- Header Row: Agents title and Create Agent button -->
+      <div v-if="agents.length > 1 || (agents.length === 1 && !showSuccessView)" class="main-header">
+        <h1 class="main-title">Agents ({{ agents.length }})</h1>
+        <button class="btn-create-agent" @click="goToOnboarding">+ Create Agent</button>
+      </div>
 
       <!-- Main Layout -->
-      <div class="hub-layout" :class="{ 'single-column': agents.length === 1 && showSuccessView, 'two-column': agents.length > 1 }">
+      <div class="hub-layout" :class="{ 'single-column': agents.length === 1 && showSuccessView, 'two-column': agents.length >= 1 && !showSuccessView }">
         <!-- Left: Agents Section -->
         <div class="agents-section">
           <!-- Enhanced first agent success view (only show right after onboarding) -->
@@ -100,19 +106,12 @@
             </div>
           </div>
 
-          <AgentHubHeader
-            v-if="agents.length > 1 || (agents.length === 1 && !showSuccessView)"
-            :agent-count="agents.length"
-            :show-search="agents.length >= 3"
-            @create-agent="goToOnboarding"
-          />
           <AgentCardGrid v-if="agents.length > 1 || (agents.length === 1 && !showSuccessView)" :agents="agents" />
         </div>
 
-        <!-- Right: Activity + Recommendations (only show when multiple agents) -->
-        <div v-if="agents.length > 1" class="activity-section">
-          <ActivityFeed />
-          <RecommendationPanel />
+        <!-- Right: Notifications (show when not in success view) -->
+        <div v-if="!showSuccessView" class="activity-section">
+          <NotificationsPanel />
         </div>
       </div>
     </template>
@@ -123,11 +122,9 @@
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import TrialBanner from '../components/agentHub/TrialBanner.vue'
-import AgentHubHeader from '../components/agentHub/AgentHubHeader.vue'
 import AgentCardGrid from '../components/agentHub/AgentCardGrid.vue'
 import AgentHubEmptyState from '../components/agentHub/AgentHubEmptyState.vue'
-import ActivityFeed from '../components/agentHub/ActivityFeed.vue'
-import RecommendationPanel from '../components/agentHub/RecommendationPanel.vue'
+import NotificationsPanel from '../components/agentHub/NotificationsPanel.vue'
 import { useActivityFeedStore } from '../stores/activityFeed'
 
 const router = useRouter()
@@ -487,6 +484,39 @@ function continueToTest() {
 
 .create-another-link a:hover {
   color: #000;
+}
+
+/* Main Header */
+.main-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  gap: 24px;
+}
+
+.main-title {
+  font-size: 32px;
+  font-weight: 600;
+  margin: 0;
+  color: #000;
+}
+
+.btn-create-agent {
+  padding: 12px 24px;
+  background: #000;
+  color: #fff;
+  border: 1px solid #000;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-create-agent:hover {
+  background: #333;
 }
 
 /* Single column layout for first agent */

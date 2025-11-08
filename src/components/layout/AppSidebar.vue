@@ -261,12 +261,26 @@ function goToAgent(agent) {
 }
 
 function createNewAgent() {
-  // Clear any existing build data to start fresh
+  // Back up current agents and show empty state for new agent creation
+  const currentAgents = localStorage.getItem('daart-agents')
+  if (currentAgents) {
+    localStorage.setItem('daart-agents-backup', currentAgents)
+  }
+
+  // Clear current agents to show empty state
+  localStorage.setItem('daart-agents', '[]')
+
+  // Set flags to show "Back to My Agents" option and track that this is not first agent
+  localStorage.setItem('daart-creating-new-agent', 'true')
+  localStorage.setItem('daart-was-creating-new-agent', 'true')
+
+  // Clear any previous onboarding data
   localStorage.removeItem('daart-building-agent')
+  localStorage.removeItem('daart-just-completed-onboarding')
   localStorage.removeItem('daart-selected-scenario')
 
-  // Navigate to home - empty state will show intent capture
-  router.push('/home')
+  // Navigate to home using full URL to ensure reload at correct location
+  window.location.href = window.location.origin + '/#/home'
 }
 
 function toggleSection(section) {
