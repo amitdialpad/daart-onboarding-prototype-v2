@@ -11,7 +11,7 @@
       <!-- Header Row: Agents title and Create Agent button -->
       <div v-if="agents.length > 1 || (agents.length === 1 && !showSuccessView)" class="main-header">
         <h1 class="main-title">Agents ({{ agents.length }})</h1>
-        <button ref="createAgentBtn" class="btn-create-agent">+ Create Agent</button>
+        <button class="btn-create-agent" @click.prevent="handleCreateAgent">+ Create Agent</button>
       </div>
 
       <!-- Main Layout -->
@@ -130,7 +130,6 @@ import { useActivityFeedStore } from '../stores/activityFeed'
 const router = useRouter()
 const agents = ref([])
 const activityStore = useActivityFeedStore()
-const createAgentBtn = ref(null)
 
 // Check if in trial (placeholder - will connect to store)
 const isInTrial = computed(() => {
@@ -158,15 +157,6 @@ onMounted(() => {
   localStorage.removeItem('daart-was-creating-new-agent')
 
   updateBodyClass()
-
-  // Attach click handler directly to button element to avoid Vue hydration issues
-  if (createAgentBtn.value) {
-    console.log('[AgentHubView] Attaching click listener to createAgentBtn')
-    createAgentBtn.value.addEventListener('click', () => {
-      console.log('[AgentHubView] Button clicked!')
-      goToOnboarding()
-    })
-  }
 })
 
 onBeforeUnmount(() => {
@@ -198,6 +188,13 @@ function generateActivity() {
   // Generate mock activity and recommendations based on agents
   activityStore.generateMockActivities(agents.value)
   activityStore.generateRecommendations(agents.value)
+}
+
+function handleCreateAgent(event) {
+  console.log('[AgentHubView] handleCreateAgent called!', event)
+  event.preventDefault()
+  event.stopPropagation()
+  goToOnboarding()
 }
 
 function goToOnboarding(scenario) {
