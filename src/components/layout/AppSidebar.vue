@@ -261,19 +261,9 @@ function goToAgent(agent) {
 }
 
 function createNewAgent() {
-  // Save current agents to temp storage so user can cancel
-  const currentAgents = localStorage.getItem('daart-agents')
-  if (currentAgents) {
-    localStorage.setItem('daart-agents-backup', currentAgents)
-  }
-
   // Clear any existing build data to start fresh
   localStorage.removeItem('daart-building-agent')
   localStorage.removeItem('daart-selected-scenario')
-  localStorage.removeItem('daart-agents')
-
-  // Set flag to show this is a "create new agent" flow
-  localStorage.setItem('daart-creating-new-agent', 'true')
 
   // Navigate to home - empty state will show intent capture
   router.push('/home')
