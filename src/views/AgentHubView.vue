@@ -217,6 +217,7 @@ function goToOnboarding(scenario) {
     // Clear any previous onboarding data
     localStorage.removeItem('daart-building-agent')
     localStorage.removeItem('daart-just-completed-onboarding')
+    localStorage.removeItem('daart-selected-scenario')
 
     // Reload to show empty state
     // Preserve base path for GitHub Pages deployment
