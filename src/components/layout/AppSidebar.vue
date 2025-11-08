@@ -95,8 +95,6 @@
               </template>
             </div>
           </div>
-
-          <a href="#" class="create-agent-link" v-if="allAgents.length > 0" @click.prevent="createNewAgent">+ Create Agent</a>
         </div>
       </div>
 
