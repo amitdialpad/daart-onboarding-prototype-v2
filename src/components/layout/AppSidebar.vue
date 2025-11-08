@@ -280,7 +280,9 @@ function createNewAgent() {
   localStorage.removeItem('daart-selected-scenario')
 
   // Navigate to home using full URL to ensure reload at correct location
-  window.location.href = window.location.origin + '/#/home'
+  // Preserve base path for GitHub Pages deployment
+  const basePath = window.location.pathname.split('#')[0]
+  window.location.href = window.location.origin + basePath + '#/home'
 }
 
 function toggleSection(section) {
