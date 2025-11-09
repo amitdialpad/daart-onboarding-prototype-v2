@@ -4,7 +4,7 @@
     <div class="test-header">
       <div class="header-content">
         <div class="header-left">
-          <button class="back-btn" @click="goBack">← Back to Edit</button>
+          <button class="back-btn" @click="goBack">Back</button>
           <div class="intent-info">
             <p class="intent-label">Testing agent for:</p>
             <p class="intent-text">{{ userIntent }}</p>
@@ -736,21 +736,24 @@ function getNodeIcon(type) {
 }
 
 .back-btn {
-  padding: 8px 16px;
-  background: transparent;
-  color: #666;
-  border: 1px solid #d0d0d0;
+  padding: 10px 16px;
+  background: #fff;
+  color: #000;
+  border: 1px solid #e0e0e0;
   border-radius: 6px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .back-btn:hover {
-  background: #f8f8f8;
-  color: #000;
-  border-color: #000;
+  background: #fafafa;
+  border-color: #999;
 }
 
 .intent-info {
@@ -776,7 +779,7 @@ function getNodeIcon(type) {
 }
 
 .continue-btn {
-  padding: 10px 20px;
+  padding: 12px 24px;
   background: #000;
   color: #fff;
   border: none;
@@ -785,6 +788,10 @@ function getNodeIcon(type) {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .continue-btn:hover {
