@@ -157,6 +157,11 @@ const routes = [
         path: 'conversations',
         name: 'Conversations',
         component: () => import('../views/knowledge/ConversationsView.vue')
+      },
+      {
+        path: 'integrations',
+        name: 'Integrations',
+        component: () => import('../views/knowledge/IntegrationsView.vue')
       }
     ]
   },

@@ -386,15 +386,6 @@ Policies:
           <div class="build-content-wrapper">
           <!-- Main Content -->
           <div class="build-main" ref="buildMainContent">
-            <!-- Live Agent Warning Banner -->
-            <div v-if="agent.status === 'live'" class="live-agent-warning">
-              <div class="warning-icon">ℹ️</div>
-              <div class="warning-content">
-                <strong>Editing Live Agent {{ agent.version || 'v1.0' }}</strong>
-                <p>Changes are auto-saved as a draft. Click "Publish Update" when ready to deploy changes to live users.</p>
-              </div>
-            </div>
-
             <!-- COMPASS Validation Panel (shows on all sections) -->
             <div v-if="validationMessages.length > 0" class="validation-panel">
               <div class="validation-header" @click="validationExpanded = !validationExpanded">
@@ -7517,42 +7508,6 @@ textarea.input-field {
 }
 
 /* Wizard Mode Prompt in Expert Mode */
-/* Live Agent Info Banner */
-.live-agent-warning {
-  background: #d1ecf1;
-  border: 1px solid #0c5460;
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 24px;
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  font-size: 14px;
-}
-
-.live-agent-warning .warning-icon {
-  font-size: 20px;
-  line-height: 1;
-  flex-shrink: 0;
-}
-
-.live-agent-warning .warning-content {
-  flex: 1;
-}
-
-.live-agent-warning .warning-content strong {
-  display: block;
-  color: #0c5460;
-  font-size: 15px;
-  margin-bottom: 4px;
-}
-
-.live-agent-warning .warning-content p {
-  color: #0c5460;
-  margin: 0;
-  line-height: 1.5;
-}
-
 /* Unpublished Changes Alert */
 .unpublished-changes-alert {
   background: #fff3cd;
