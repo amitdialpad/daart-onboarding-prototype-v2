@@ -44,15 +44,15 @@ const currentPhase = ref(0)
 // Phases (Phase 4 removed as per user request)
 const phases = ref([
   {
-    title: 'Phase 1',
+    title: 'Building foundation',
     description: 'Initializing agent workspace'
   },
   {
-    title: 'Phase 2',
+    title: 'Installing brains',
     description: 'Configuring AI capabilities'
   },
   {
-    title: 'Phase 3',
+    title: 'Final touches',
     description: 'Preparing your dashboard'
   }
 ])

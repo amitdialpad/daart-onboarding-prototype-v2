@@ -11,7 +11,7 @@
           </div>
         </div>
         <div class="header-right">
-          <button class="continue-btn" @click="continueConfiguration">Continue Configuration →</button>
+          <button class="continue-btn" @click="continueConfiguration">Set up my agent →</button>
         </div>
       </div>
     </div>

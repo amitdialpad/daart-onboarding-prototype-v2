@@ -43,7 +43,7 @@
             </div>
           </div>
 
-          <div class="method-card featured" @click="selectMethod('knowledge')">
+          <div class="method-card" @click="selectMethod('knowledge')">
             <div class="card-header">
               <h3>Connect your knowledge</h3>
               <p class="time-estimate">~3 minutes</p>

@@ -434,7 +434,7 @@
                 Save Changes & Refresh Agent
               </button>
               <button class="btn-primary" @click="continueConfiguration">
-                Continue Configuration
+                Set up my agent
               </button>
             </div>
           </div>
