@@ -8,7 +8,7 @@
     </div>
 
     <div class="empty-state-container">
-      <div class="empty-content" :class="{ 'transitioning': isTransitioning }">
+      <div class="empty-content">
         <h1>What do you want your agent to do?</h1>
 
         <!-- Input Area (primary focal point) -->
@@ -86,7 +86,6 @@ const customIntent = ref('')
 const intentError = ref('')
 const selectedScenario = ref(null)
 const intentInput = ref(null)
-const isTransitioning = ref(false)
 
 // Check if user has backup agents (came from "Create Agent" button)
 const hasBackupAgents = computed(() => {
@@ -122,13 +121,8 @@ function selectScenario(scenario) {
   customIntent.value = scenario.intent
   intentError.value = ''
 
-  // Start transition animation - show selected card moving up
-  isTransitioning.value = true
-
-  // Wait for card animation to complete before proceeding
-  setTimeout(() => {
-    emit('create-agent', scenario)
-  }, 600)
+  // Immediately proceed to next step
+  emit('create-agent', scenario)
 }
 
 function onIntentChange() {
@@ -263,39 +257,6 @@ const scenarios = ref([
   text-align: center;
 }
 
-.empty-content.transitioning h1,
-.empty-content.transitioning .subtitle,
-.empty-content.transitioning .input-section,
-.empty-content.transitioning .trial-info {
-  animation: fadeOutUp 0.4s ease-out forwards;
-}
-
-.empty-content.transitioning .scenarios-grid {
-  animation: cardsExit 0.6s ease-out forwards;
-}
-
-@keyframes fadeOutUp {
-  to {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-}
-
-@keyframes cardsExit {
-  0% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  50% {
-    opacity: 0.3;
-    transform: translateY(-30px);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-50px);
-  }
-}
-
 h1 {
   font-size: 42px;
   font-weight: 600;
@@ -339,41 +300,6 @@ h1 {
   border-color: #000;
   background: #f8f8f8;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-/* Selected card animation during transition */
-.empty-content.transitioning .scenario-card.selected {
-  animation: selectedCardHighlight 0.6s ease-out forwards;
-  z-index: 10;
-  position: relative;
-}
-
-/* Non-selected cards fade faster */
-.empty-content.transitioning .scenario-card:not(.selected) {
-  animation: fadeOutFast 0.3s ease-out forwards;
-}
-
-@keyframes selectedCardHighlight {
-  0% {
-    transform: scale(1) translateY(0);
-    opacity: 1;
-  }
-  30% {
-    transform: scale(1.05) translateY(-10px);
-    opacity: 1;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
-  }
-  100% {
-    transform: scale(1.05) translateY(-60px);
-    opacity: 0;
-  }
-}
-
-@keyframes fadeOutFast {
-  to {
-    opacity: 0;
-    transform: scale(0.95);
-  }
 }
 
 .scenario-title {
