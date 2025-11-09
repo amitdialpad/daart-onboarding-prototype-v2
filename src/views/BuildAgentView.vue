@@ -144,7 +144,6 @@ function selectMethod(method) {
 <style scoped>
 .build-agent-view {
   width: 100%;
-  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -158,13 +157,12 @@ function selectMethod(method) {
 }
 
 .method-selection-content {
-  text-align: center;
+  text-align: left;
 }
 
 /* Intent Context */
 .intent-context {
-  max-width: 700px;
-  margin: 0 auto 32px;
+  margin: 0 0 32px;
   padding: 16px 24px;
   background: #f8f8f8;
   border: 1px solid #e0e0e0;
