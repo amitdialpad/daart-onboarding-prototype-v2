@@ -13,125 +13,118 @@
         </router-link>
       </div>
 
-      <!-- Agents Section -->
-      <div class="nav-section">
-        <div class="section-header" @click="toggleSection('agents')">
-          <span class="expand-icon">{{ sectionsExpanded.agents ? '▼' : '▶' }}</span>
-          <span class="section-title">Agents</span>
+      <!-- Empty state: Create First Agent -->
+      <div v-if="allAgents.length === 0" class="nav-section">
+        <div class="empty-message">
+          <a href="#" class="create-agent-link" @click.prevent="createNewAgent">+ Create First Agent</a>
+        </div>
+      </div>
+
+      <!-- Each Agent as Top-Level Section -->
+      <div v-for="agent in allAgents" :key="agent.id" class="nav-section agent-section">
+        <div class="section-header" @click="toggleAgentSection(agent.id)">
+          <span class="expand-icon">{{ agentSectionsExpanded[agent.id] ? '▼' : '▶' }}</span>
+          <span class="section-title agent-title" @click.stop="goToAgent(agent)">
+            {{ agent.name }}
+            <span class="agent-status-badge">{{ agent.status === 'live' ? 'Live' : 'Draft' }}</span>
+          </span>
         </div>
 
-        <!-- Agents Content -->
-        <div v-if="sectionsExpanded.agents" class="section-content">
-          <div v-if="allAgents.length === 0" class="empty-message">
-            <a href="#" class="create-agent-link" @click.prevent="createNewAgent">+ Create First Agent</a>
-          </div>
+        <!-- Agent Tabs as Direct Children -->
+        <div v-if="agentSectionsExpanded[agent.id]" class="section-content">
+          <!-- Live agents: All tabs -->
+          <template v-if="agent.status === 'live'">
+            <router-link
+              :to="`/agents-v2/${agent.id}/overview`"
+              class="subsection-link"
+              :class="{ active: isAgentTabActive(agent.id, 'overview') }">
+              Overview
+            </router-link>
+            <router-link
+              :to="`/agents-v2/${agent.id}/build`"
+              class="subsection-link"
+              :class="{ active: isAgentTabActive(agent.id, 'build') }">
+              Build
+            </router-link>
+            <router-link
+              :to="`/agents-v2/${agent.id}/test`"
+              class="subsection-link"
+              :class="{ active: isAgentTabActive(agent.id, 'test') }">
+              Test
+            </router-link>
+            <router-link
+              :to="`/agents-v2/${agent.id}/evaluate`"
+              class="subsection-link"
+              :class="{ active: isAgentTabActive(agent.id, 'evaluate') }">
+              Proving Ground
+            </router-link>
+            <router-link
+              :to="`/agents-v2/${agent.id}/conversations`"
+              class="subsection-link"
+              :class="{ active: isAgentTabActive(agent.id, 'conversations') }">
+              Conversations
+            </router-link>
+            <router-link
+              :to="`/agents-v2/${agent.id}/analyze`"
+              class="subsection-link"
+              :class="{ active: isAgentTabActive(agent.id, 'analyze') }">
+              Analyze
+            </router-link>
+            <router-link
+              :to="`/agents-v2/${agent.id}/deploy`"
+              class="subsection-link"
+              :class="{ active: isAgentTabActive(agent.id, 'deploy') }">
+              Deploy
+            </router-link>
+          </template>
 
-          <div v-for="agent in allAgents" :key="agent.id" class="agent-item">
-            <div
-              class="agent-link"
-              :class="{ selected: selectedAgent?.id === agent.id }"
-              @click="goToAgent(agent)">
-              {{ agent.name }}
-              <span class="agent-status-badge">{{ agent.status === 'live' ? 'Live' : 'Draft' }}</span>
-            </div>
-
-            <!-- Show tabs for selected agent based on status -->
-            <div v-if="selectedAgent?.id === agent.id" class="agent-tabs">
-              <!-- Live agents: Overview first, then Analyze -->
-              <template v-if="agent.status === 'live'">
-                <router-link
-                  :to="`/agents-v2/${agent.id}/overview`"
-                  class="tab-link"
-                  :class="{ active: currentRoute.includes('/overview') }">
-                  Overview
-                </router-link>
-                <router-link
-                  :to="`/agents-v2/${agent.id}/build`"
-                  class="tab-link"
-                  :class="{ active: currentRoute.includes('/build') }">
-                  Build
-                </router-link>
-                <router-link
-                  :to="`/agents-v2/${agent.id}/test`"
-                  class="tab-link"
-                  :class="{ active: currentRoute.includes('/test') }">
-                  Test
-                </router-link>
-                <router-link
-                  :to="`/agents-v2/${agent.id}/evaluate`"
-                  class="tab-link"
-                  :class="{ active: currentRoute.includes('/evaluate') }">
-                  Proving Ground
-                </router-link>
-                <router-link
-                  :to="`/agents-v2/${agent.id}/conversations`"
-                  class="tab-link"
-                  :class="{ active: currentRoute.includes('/conversations') }">
-                  Conversations
-                </router-link>
-                <router-link
-                  :to="`/agents-v2/${agent.id}/analyze`"
-                  class="tab-link"
-                  :class="{ active: currentRoute.includes('/analyze') }">
-                  Analyze
-                </router-link>
-                <router-link
-                  :to="`/agents-v2/${agent.id}/deploy`"
-                  class="tab-link"
-                  :class="{ active: currentRoute.includes('/deploy') }">
-                  Deploy
-                </router-link>
-              </template>
-
-              <!-- Draft agents: Overview first, Show Analyze if has been published before -->
-              <template v-else>
-                <router-link
-                  :to="`/agents-v2/${agent.id}/overview`"
-                  class="tab-link"
-                  :class="{ active: currentRoute.includes('/overview') }">
-                  Overview
-                </router-link>
-                <router-link
-                  :to="`/agents-v2/${agent.id}/build`"
-                  class="tab-link"
-                  :class="{ active: currentRoute.includes('/build') }">
-                  Build
-                </router-link>
-                <router-link
-                  :to="`/agents-v2/${agent.id}/test`"
-                  class="tab-link"
-                  :class="{ active: currentRoute.includes('/test') }">
-                  Test
-                </router-link>
-                <router-link
-                  :to="`/agents-v2/${agent.id}/evaluate`"
-                  class="tab-link"
-                  :class="{ active: currentRoute.includes('/evaluate') }">
-                  Proving Ground
-                </router-link>
-                <router-link
-                  v-if="agent.hasBeenPublished"
-                  :to="`/agents-v2/${agent.id}/conversations`"
-                  class="tab-link"
-                  :class="{ active: currentRoute.includes('/conversations') }">
-                  Conversations
-                </router-link>
-                <router-link
-                  v-if="agent.hasBeenPublished"
-                  :to="`/agents-v2/${agent.id}/analyze`"
-                  class="tab-link"
-                  :class="{ active: currentRoute.includes('/analyze') }">
-                  Analyze
-                </router-link>
-                <router-link
-                  :to="`/agents-v2/${agent.id}/deploy`"
-                  class="tab-link"
-                  :class="{ active: currentRoute.includes('/deploy') }">
-                  Deploy
-                </router-link>
-              </template>
-            </div>
-          </div>
+          <!-- Draft agents: Limited tabs -->
+          <template v-else>
+            <router-link
+              :to="`/agents-v2/${agent.id}/overview`"
+              class="subsection-link"
+              :class="{ active: isAgentTabActive(agent.id, 'overview') }">
+              Overview
+            </router-link>
+            <router-link
+              :to="`/agents-v2/${agent.id}/build`"
+              class="subsection-link"
+              :class="{ active: isAgentTabActive(agent.id, 'build') }">
+              Build
+            </router-link>
+            <router-link
+              :to="`/agents-v2/${agent.id}/test`"
+              class="subsection-link"
+              :class="{ active: isAgentTabActive(agent.id, 'test') }">
+              Test
+            </router-link>
+            <router-link
+              :to="`/agents-v2/${agent.id}/evaluate`"
+              class="subsection-link"
+              :class="{ active: isAgentTabActive(agent.id, 'evaluate') }">
+              Proving Ground
+            </router-link>
+            <router-link
+              v-if="agent.hasBeenPublished"
+              :to="`/agents-v2/${agent.id}/conversations`"
+              class="subsection-link"
+              :class="{ active: isAgentTabActive(agent.id, 'conversations') }">
+              Conversations
+            </router-link>
+            <router-link
+              v-if="agent.hasBeenPublished"
+              :to="`/agents-v2/${agent.id}/analyze`"
+              class="subsection-link"
+              :class="{ active: isAgentTabActive(agent.id, 'analyze') }">
+              Analyze
+            </router-link>
+            <router-link
+              :to="`/agents-v2/${agent.id}/deploy`"
+              class="subsection-link"
+              :class="{ active: isAgentTabActive(agent.id, 'deploy') }">
+              Deploy
+            </router-link>
+          </template>
         </div>
       </div>
 
@@ -247,12 +240,14 @@ const allAgents = ref([])
 
 // Section expansion state
 const sectionsExpanded = ref({
-  agents: true,
   knowledge: false,
   analytics: false,
   billing: false,
   settings: false
 })
+
+// Agent-specific expansion state (object with agentId keys)
+const agentSectionsExpanded = ref({})
 
 const currentRoute = computed(() => route.path)
 
@@ -283,16 +278,26 @@ function loadAgents() {
 }
 
 function goToAgent(agent) {
-  // If agent is live, go to MONITOR tab
-  // If agent is draft but has been published before, go to MONITOR tab (historical data)
-  // If agent is draft and never published, go to BUILD tab
-  let defaultTab = 'build'
-  if (agent.status === 'live') {
-    defaultTab = 'monitor'
-  } else if (agent.status === 'draft' && agent.hasBeenPublished) {
-    defaultTab = 'monitor'
+  // Always go to OVERVIEW tab when clicking agent name
+  router.push(`/agents-v2/${agent.id}/overview`)
+}
+
+function toggleAgentSection(agentId) {
+  agentSectionsExpanded.value[agentId] = !agentSectionsExpanded.value[agentId]
+}
+
+function isAgentTabActive(agentId, tab) {
+  // Check if current route matches this agent and tab
+  if (!route.params.id || route.params.id !== agentId) {
+    return false
   }
-  router.push(`/agents-v2/${agent.id}/${defaultTab}`)
+
+  // Special handling for conversation details - highlight conversations tab
+  if (tab === 'conversations' && route.path.includes('/conversations')) {
+    return true
+  }
+
+  return route.path.includes(`/agents-v2/${agentId}/${tab}`)
 }
 
 function createNewAgent() {
@@ -327,7 +332,11 @@ function toggleSection(section) {
 function autoExpandActiveSection() {
   // Auto-expand section based on current route
   if (currentRoute.value.includes('/agents-v2')) {
-    sectionsExpanded.value.agents = true
+    // Auto-expand the current agent's section
+    const agentId = route.params.id
+    if (agentId) {
+      agentSectionsExpanded.value[agentId] = true
+    }
   } else if (currentRoute.value.includes('/knowledge-v2')) {
     sectionsExpanded.value.knowledge = true
   } else if (currentRoute.value.includes('/analytics-v2')) {
@@ -496,10 +505,22 @@ function resetDemo() {
   color: #000;
 }
 
+.agent-section .section-header {
+  cursor: pointer;
+}
+
+.agent-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
 .agent-status-badge {
   font-size: 10px;
   color: #666;
   text-transform: uppercase;
+  margin-left: 8px;
 }
 
 .agent-tabs {
