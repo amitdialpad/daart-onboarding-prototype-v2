@@ -35,10 +35,10 @@
           <!-- Live agents: All tabs -->
           <template v-if="agent.status === 'live'">
             <router-link
-              :to="`/agents-v2/${agent.id}/overview`"
+              :to="`/agents-v2/${agent.id}/insights`"
               class="subsection-link"
-              :class="{ active: isAgentTabActive(agent.id, 'overview') }">
-              Overview
+              :class="{ active: isAgentTabActive(agent.id, 'insights') }">
+              Insights
             </router-link>
             <router-link
               :to="`/agents-v2/${agent.id}/build`"
@@ -63,12 +63,6 @@
               class="subsection-link"
               :class="{ active: isAgentTabActive(agent.id, 'conversations') }">
               Conversations
-            </router-link>
-            <router-link
-              :to="`/agents-v2/${agent.id}/analyze`"
-              class="subsection-link"
-              :class="{ active: isAgentTabActive(agent.id, 'analyze') }">
-              Analyze
             </router-link>
             <router-link
               :to="`/agents-v2/${agent.id}/deploy`"
@@ -81,12 +75,6 @@
           <!-- Draft agents: Limited tabs -->
           <template v-else>
             <router-link
-              :to="`/agents-v2/${agent.id}/overview`"
-              class="subsection-link"
-              :class="{ active: isAgentTabActive(agent.id, 'overview') }">
-              Overview
-            </router-link>
-            <router-link
               :to="`/agents-v2/${agent.id}/build`"
               class="subsection-link"
               :class="{ active: isAgentTabActive(agent.id, 'build') }">
@@ -113,10 +101,10 @@
             </router-link>
             <router-link
               v-if="agent.hasBeenPublished"
-              :to="`/agents-v2/${agent.id}/analyze`"
+              :to="`/agents-v2/${agent.id}/insights`"
               class="subsection-link"
-              :class="{ active: isAgentTabActive(agent.id, 'analyze') }">
-              Analyze
+              :class="{ active: isAgentTabActive(agent.id, 'insights') }">
+              Insights
             </router-link>
             <router-link
               :to="`/agents-v2/${agent.id}/deploy`"
@@ -278,8 +266,12 @@ function loadAgents() {
 }
 
 function goToAgent(agent) {
-  // Always go to OVERVIEW tab when clicking agent name
-  router.push(`/agents-v2/${agent.id}/overview`)
+  // Live agents go to INSIGHTS, draft agents go to BUILD
+  if (agent.status === 'live') {
+    router.push(`/agents-v2/${agent.id}/insights`)
+  } else {
+    router.push(`/agents-v2/${agent.id}/build`)
+  }
 }
 
 function toggleAgentSection(agentId) {

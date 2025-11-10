@@ -1457,33 +1457,39 @@ Policies:
           <ProvingGroundPanel />
         </div>
 
-        <!-- MONITOR Tab Content -->
-        <div v-else-if="activeTab === 'monitor'" class="monitor-layout">
+        <!-- INSIGHTS Tab Content -->
+        <div v-else-if="activeTab === 'insights'" class="monitor-layout">
           <div class="monitor-main">
-            <!-- Analyze Sub-Navigation -->
+            <!-- Insights Sub-Navigation -->
             <div class="monitor-subnav">
               <button
                 class="monitor-subnav-btn"
-                :class="{ active: monitorSubTab === 'performance' }"
-                @click="monitorSubTab = 'performance'">
+                :class="{ active: insightsSubTab === 'overview' }"
+                @click="insightsSubTab = 'overview'">
+                Overview
+              </button>
+              <button
+                class="monitor-subnav-btn"
+                :class="{ active: insightsSubTab === 'performance' }"
+                @click="insightsSubTab = 'performance'">
                 Performance
               </button>
               <button
                 class="monitor-subnav-btn"
-                :class="{ active: monitorSubTab === 'insights' }"
-                @click="monitorSubTab = 'insights'">
-                Insights
+                :class="{ active: insightsSubTab === 'skill-mining' }"
+                @click="insightsSubTab = 'skill-mining'">
+                Skill Mining
               </button>
               <button
                 class="monitor-subnav-btn"
-                :class="{ active: monitorSubTab === 'security' }"
-                @click="monitorSubTab = 'security'">
+                :class="{ active: insightsSubTab === 'security' }"
+                @click="insightsSubTab = 'security'">
                 Security
               </button>
             </div>
 
-            <!-- Performance Sub-Tab -->
-            <div v-if="monitorSubTab === 'performance'">
+            <!-- Overview Sub-Tab -->
+            <div v-if="insightsSubTab === 'overview'">
               <!-- Live Agent Dashboard -->
               <div v-if="agent.status === 'live'" class="live-dashboard">
                 <div class="dashboard-header">
@@ -1592,8 +1598,17 @@ Policies:
               </div>
             </div>
 
-            <!-- Insights Sub-Tab -->
-            <div v-if="monitorSubTab === 'insights'">
+            <!-- Performance Sub-Tab -->
+            <div v-if="insightsSubTab === 'performance'">
+              <div class="performance-content">
+                <h3>Performance</h3>
+                <p class="subtitle">Detailed performance metrics and trends</p>
+                <p class="coming-soon">📊 Detailed performance analytics coming soon</p>
+              </div>
+            </div>
+
+            <!-- Skill Mining Sub-Tab -->
+            <div v-if="insightsSubTab === 'skill-mining'">
               <div class="insights-content">
                 <h3>Insights</h3>
                 <p class="subtitle">Discover patterns and improvement opportunities</p>
@@ -1648,7 +1663,7 @@ Policies:
             </div>
 
             <!-- Security Sub-Tab -->
-            <div v-if="monitorSubTab === 'security'">
+            <div v-if="insightsSubTab === 'security'">
               <div class="security-content">
                 <h3>Security</h3>
                 <p class="subtitle">Monitor security alerts and vulnerabilities</p>
@@ -1915,7 +1930,7 @@ const autoSaving = ref(false)
 const lastSaved = ref(false)
 const buildMainContent = ref(null)
 const activeBuildSection = ref('configuration')
-const monitorSubTab = ref('performance')
+const insightsSubTab = ref('overview')
 const hasUnpublishedChanges = ref(false) // Track if live agent has been edited
 const lastPublishedSnapshot = ref(null) // Store snapshot of last published version
 
@@ -2332,8 +2347,9 @@ const activeTab = computed(() => {
   if (route.path.includes('/build')) return 'build'
   if (route.path.includes('/test')) return 'test'
   if (route.path.includes('/evaluate')) return 'evaluate'
-  if (route.path.includes('/analyze')) return 'monitor'  // /analyze route uses monitor tab internally
-  if (route.path.includes('/monitor')) return 'monitor'  // Legacy fallback
+  if (route.path.includes('/insights')) return 'insights'
+  if (route.path.includes('/analyze')) return 'insights'  // /analyze redirects to insights
+  if (route.path.includes('/monitor')) return 'insights'  // Legacy fallback
   return 'build'
 })
 

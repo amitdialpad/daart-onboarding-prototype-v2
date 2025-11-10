@@ -320,7 +320,7 @@ function publishAgent() {
 }
 
 function goToMonitor() {
-  router.push(`/agents-v2/${agent.value.id}/analyze`)
+  router.push(`/agents-v2/${agent.value.id}/insights`)
 }
 
 function goBack() {

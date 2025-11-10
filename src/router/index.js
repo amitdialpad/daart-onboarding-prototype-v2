@@ -92,12 +92,19 @@ const routes = [
       },
       {
         path: ':id',
-        redirect: to => `/agents-v2/${to.params.id}/overview`
-      },
-      {
-        path: ':id/overview',
-        name: 'AgentOverviewV2',
-        component: () => import('../views/AgentOverviewView.vue')
+        redirect: to => {
+          // Get agent data to determine default route
+          const agentsData = localStorage.getItem('daart-agents')
+          if (agentsData) {
+            const agents = JSON.parse(agentsData)
+            const agent = agents.find(a => a.id === to.params.id)
+            // Live agents default to insights, draft agents default to build
+            if (agent?.status === 'live') {
+              return `/agents-v2/${to.params.id}/insights`
+            }
+          }
+          return `/agents-v2/${to.params.id}/build`
+        }
       },
       {
         path: ':id/build',
@@ -123,10 +130,14 @@ const routes = [
         component: () => import('../views/ConversationsView.vue')
       },
       {
-        path: ':id/analyze',
-        name: 'AgentAnalyzeV2',
+        path: ':id/insights',
+        name: 'AgentInsightsV2',
         component: () => import('../views/AgentsWorkspaceV2View.vue'),
-        props: { activeTab: 'monitor' }
+        props: { activeTab: 'insights' }
+      },
+      {
+        path: ':id/analyze',
+        redirect: to => `/agents-v2/${to.params.id}/insights`
       },
       {
         path: ':id/deploy',

@@ -83,7 +83,7 @@
             <span class="action-label">Deploy Agent</span>
             <span class="action-arrow">→</span>
           </router-link>
-          <router-link v-else :to="`/agents-v2/${$route.params.id}/analyze`" class="action-button">
+          <router-link v-else :to="`/agents-v2/${$route.params.id}/insights`" class="action-button">
             <span class="action-label">View Analytics</span>
             <span class="action-arrow">→</span>
           </router-link>
