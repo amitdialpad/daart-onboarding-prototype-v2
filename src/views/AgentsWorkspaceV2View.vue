@@ -413,6 +413,8 @@ Policies:
             <div v-if="activeBuildSection === 'configuration'" id="configuration" class="config-section build-section-anchor">
               <h3>Configuration</h3>
 
+              <AIAssistant context="configuration" />
+
               <div class="form-group">
                 <label>Agent Name</label>
                 <input
@@ -847,6 +849,8 @@ Policies:
               <h3>Sources</h3>
               <p class="section-intro">Manage knowledge sources for your agent to reference when answering questions</p>
 
+              <AIAssistant context="knowledge" />
+
               <!-- Connected Sources Section -->
               <div class="sources-main-section">
                 <h4 class="sources-section-title">Connected sources</h4>
@@ -1072,6 +1076,8 @@ Policies:
                   <button class="btn-primary">+ Add Skills</button>
                 </div>
               </div>
+
+              <AIAssistant context="skills" />
 
               <!-- Filters and Search -->
               <div class="skills-filters">
@@ -1361,7 +1367,12 @@ Policies:
                 <div class="metric-card">
                   <div class="metric-label">Customer Satisfaction</div>
                   <div class="metric-value">4.6/5</div>
-                  <div class="metric-change">⭐ Based on 89 ratings</div>
+                  <div class="metric-change">Based on 89 ratings</div>
+                </div>
+                <div class="metric-card">
+                  <div class="metric-label">AI CSAT</div>
+                  <div class="metric-value">4.3/5</div>
+                  <div class="metric-change">AI-assessed satisfaction</div>
                 </div>
               </div>
 
@@ -1379,25 +1390,9 @@ Policies:
                 </div>
               </div>
 
-              <!-- Conversation History -->
-              <div class="conversation-history">
-                <h4>Recent Conversations</h4>
-                <div class="conversation-list">
-                  <div v-for="conv in mockConversations" :key="conv.id" class="conversation-item">
-                    <div class="conv-header">
-                      <div class="conv-channel-badge" :class="conv.channel">{{ conv.channel }}</div>
-                      <div class="conv-time">{{ conv.time }}</div>
-                    </div>
-                    <div class="conv-user">{{ conv.user }}</div>
-                    <div class="conv-summary">{{ conv.summary }}</div>
-                    <div class="conv-footer">
-                      <span class="conv-duration">{{ conv.duration }}</span>
-                      <span class="conv-status" :class="conv.resolved ? 'resolved' : 'escalated'">
-                        {{ conv.resolved ? 'Resolved' : 'Escalated' }}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+              <!-- Traces/History Section -->
+              <div class="traces-section">
+                <TracesPanel />
               </div>
             </div>
 
@@ -1662,6 +1657,8 @@ import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import TestingPanel from '../components/workspace/TestingPanel.vue'
 import ProvingGroundPanel from '../components/workspace/ProvingGroundPanel.vue'
+import TracesPanel from '../components/workspace/TracesPanel.vue'
+import AIAssistant from '../components/workspace/AIAssistant.vue'
 
 const route = useRoute()
 const router = useRouter()
