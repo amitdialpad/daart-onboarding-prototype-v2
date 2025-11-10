@@ -1343,95 +1343,114 @@ Policies:
         <!-- MONITOR Tab Content -->
         <div v-else-if="activeTab === 'monitor'" class="monitor-layout">
           <div class="monitor-main">
-            <!-- Live Agent Dashboard -->
-            <div v-if="agent.status === 'live'" class="live-dashboard">
-              <h3>Live Performance Dashboard</h3>
+            <!-- Monitor Sub-Navigation -->
+            <div class="monitor-subnav">
+              <button
+                class="monitor-subnav-btn"
+                :class="{ active: monitorSubTab === 'dashboard' }"
+                @click="monitorSubTab = 'dashboard'">
+                Dashboard
+              </button>
+              <button
+                class="monitor-subnav-btn"
+                :class="{ active: monitorSubTab === 'traces' }"
+                @click="monitorSubTab = 'traces'">
+                Traces
+              </button>
+            </div>
 
-              <!-- Key Metrics -->
-              <div class="metrics-grid">
-                <div class="metric-card">
-                  <div class="metric-label">Total Conversations</div>
-                  <div class="metric-value">247</div>
-                  <div class="metric-change positive">↑ 12% this week</div>
+            <!-- Dashboard Sub-Tab -->
+            <div v-if="monitorSubTab === 'dashboard'">
+              <!-- Live Agent Dashboard -->
+              <div v-if="agent.status === 'live'" class="live-dashboard">
+                <h3>Live Performance Dashboard</h3>
+
+                <!-- Key Metrics -->
+                <div class="metrics-grid">
+                  <div class="metric-card">
+                    <div class="metric-label">Total Conversations</div>
+                    <div class="metric-value">247</div>
+                    <div class="metric-change positive">↑ 12% this week</div>
+                  </div>
+                  <div class="metric-card">
+                    <div class="metric-label">Deflection Rate</div>
+                    <div class="metric-value">78%</div>
+                    <div class="metric-change positive">↑ 5% this week</div>
+                  </div>
+                  <div class="metric-card">
+                    <div class="metric-label">Avg Response Time</div>
+                    <div class="metric-value">1.2s</div>
+                    <div class="metric-change positive">↓ 0.3s improvement</div>
+                  </div>
+                  <div class="metric-card">
+                    <div class="metric-label">Customer Satisfaction</div>
+                    <div class="metric-value">4.6/5</div>
+                    <div class="metric-change">Based on 89 ratings</div>
+                  </div>
+                  <div class="metric-card">
+                    <div class="metric-label">AI CSAT</div>
+                    <div class="metric-value">4.3/5</div>
+                    <div class="metric-change">AI-assessed satisfaction</div>
+                  </div>
                 </div>
-                <div class="metric-card">
-                  <div class="metric-label">Deflection Rate</div>
-                  <div class="metric-value">78%</div>
-                  <div class="metric-change positive">↑ 5% this week</div>
-                </div>
-                <div class="metric-card">
-                  <div class="metric-label">Avg Response Time</div>
-                  <div class="metric-value">1.2s</div>
-                  <div class="metric-change positive">↓ 0.3s improvement</div>
-                </div>
-                <div class="metric-card">
-                  <div class="metric-label">Customer Satisfaction</div>
-                  <div class="metric-value">4.6/5</div>
-                  <div class="metric-change">Based on 89 ratings</div>
-                </div>
-                <div class="metric-card">
-                  <div class="metric-label">AI CSAT</div>
-                  <div class="metric-value">4.3/5</div>
-                  <div class="metric-change">AI-assessed satisfaction</div>
+
+                <!-- Active Status -->
+                <div class="status-card live">
+                  <div class="status-indicator"></div>
+                  <div class="status-info">
+                    <div class="status-title">Agent is Live</div>
+                    <div class="status-text">Published {{ formatDate(agent.lastPublishedDate) }}</div>
+                  </div>
+                  <div class="active-channels">
+                    <span v-for="(channel, index) in activeChannelLabels" :key="index" class="active-channel-badge">
+                      {{ channel }}
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <!-- Active Status -->
-              <div class="status-card live">
-                <div class="status-indicator"></div>
-                <div class="status-info">
-                  <div class="status-title">Agent is Live</div>
-                  <div class="status-text">Published {{ formatDate(agent.lastPublishedDate) }}</div>
+              <!-- Draft Agent State -->
+              <div v-else class="draft-dashboard">
+                <div class="draft-state-card">
+                  <h3>Agent Not Published</h3>
+                  <p>This agent is currently in draft mode. Publish it to start accepting conversations and see performance metrics here.</p>
+                  <button class="btn-primary" @click="navigateToDeploy">Review & Deploy</button>
                 </div>
-                <div class="active-channels">
-                  <span v-for="(channel, index) in activeChannelLabels" :key="index" class="active-channel-badge">
-                    {{ channel }}
-                  </span>
-                </div>
-              </div>
 
-              <!-- Traces/History Section -->
-              <div class="traces-section">
-                <TracesPanel />
+                <!-- Show historical data if agent was published before -->
+                <div v-if="agent.hasBeenPublished" class="historical-data">
+                  <h4>Historical Data</h4>
+                  <p class="historical-note">Last published: {{ formatDate(agent.lastPublishedDate) }}</p>
+
+                  <div class="metrics-grid">
+                    <div class="metric-card historical">
+                      <div class="metric-label">Total Conversations</div>
+                      <div class="metric-value">247</div>
+                      <div class="metric-change">While agent was live</div>
+                    </div>
+                    <div class="metric-card historical">
+                      <div class="metric-label">Deflection Rate</div>
+                      <div class="metric-value">78%</div>
+                      <div class="metric-change">Historical average</div>
+                    </div>
+                    <div class="metric-card historical">
+                      <div class="metric-label">Avg Response Time</div>
+                      <div class="metric-value">1.2s</div>
+                      <div class="metric-change">Historical average</div>
+                    </div>
+                    <div class="metric-card historical">
+                      <div class="metric-label">Customer Satisfaction</div>
+                      <div class="metric-value">4.6/5</div>
+                      <div class="metric-change">Historical average</div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <!-- Draft Agent State -->
-            <div v-else class="draft-dashboard">
-              <div class="draft-state-card">
-                <h3>Agent Not Published</h3>
-                <p>This agent is currently in draft mode. Publish it to start accepting conversations and see performance metrics here.</p>
-                <button class="btn-primary" @click="navigateToDeploy">Review & Deploy</button>
-              </div>
-
-              <!-- Show historical data if agent was published before -->
-              <div v-if="agent.hasBeenPublished" class="historical-data">
-                <h4>Historical Data</h4>
-                <p class="historical-note">Last published: {{ formatDate(agent.lastPublishedDate) }}</p>
-
-                <div class="metrics-grid">
-                  <div class="metric-card historical">
-                    <div class="metric-label">Total Conversations</div>
-                    <div class="metric-value">247</div>
-                    <div class="metric-change">While agent was live</div>
-                  </div>
-                  <div class="metric-card historical">
-                    <div class="metric-label">Deflection Rate</div>
-                    <div class="metric-value">78%</div>
-                    <div class="metric-change">Historical average</div>
-                  </div>
-                  <div class="metric-card historical">
-                    <div class="metric-label">Avg Response Time</div>
-                    <div class="metric-value">1.2s</div>
-                    <div class="metric-change">Historical average</div>
-                  </div>
-                  <div class="metric-card historical">
-                    <div class="metric-label">Customer Satisfaction</div>
-                    <div class="metric-value">4.6/5</div>
-                    <div class="metric-change">⭐ Historical average</div>
-                  </div>
-                </div>
-              </div>
+            <!-- Traces Sub-Tab -->
+            <div v-if="monitorSubTab === 'traces'">
+              <TracesPanel />
             </div>
           </div>
 
@@ -1669,6 +1688,7 @@ const autoSaving = ref(false)
 const lastSaved = ref(false)
 const buildMainContent = ref(null)
 const activeBuildSection = ref('configuration')
+const monitorSubTab = ref('dashboard')
 const hasUnpublishedChanges = ref(false) // Track if live agent has been edited
 const lastPublishedSnapshot = ref(null) // Store snapshot of last published version
 
@@ -3635,9 +3655,44 @@ textarea.input-field {
 }
 
 .monitor-main {
-  padding: 40px;
+  padding: 0;
   overflow-y: auto;
   background: #fff;
+}
+
+.monitor-subnav {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid #e0e0e0;
+  background: #fff;
+  padding: 0 40px;
+}
+
+.monitor-subnav-btn {
+  padding: 16px 24px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.monitor-subnav-btn:hover {
+  color: #000;
+}
+
+.monitor-subnav-btn.active {
+  color: #000;
+  border-bottom-color: #000;
+  font-weight: 600;
+}
+
+.live-dashboard,
+.draft-dashboard {
+  padding: 40px;
 }
 
 .monitor-panel-wrapper {
