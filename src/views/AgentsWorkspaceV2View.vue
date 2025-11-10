@@ -1460,24 +1460,30 @@ Policies:
         <!-- MONITOR Tab Content -->
         <div v-else-if="activeTab === 'monitor'" class="monitor-layout">
           <div class="monitor-main">
-            <!-- Monitor Sub-Navigation -->
+            <!-- Analyze Sub-Navigation -->
             <div class="monitor-subnav">
               <button
                 class="monitor-subnav-btn"
-                :class="{ active: monitorSubTab === 'dashboard' }"
-                @click="monitorSubTab = 'dashboard'">
-                Dashboard
+                :class="{ active: monitorSubTab === 'performance' }"
+                @click="monitorSubTab = 'performance'">
+                Performance
               </button>
               <button
                 class="monitor-subnav-btn"
-                :class="{ active: monitorSubTab === 'traces' }"
-                @click="monitorSubTab = 'traces'">
-                Traces
+                :class="{ active: monitorSubTab === 'insights' }"
+                @click="monitorSubTab = 'insights'">
+                Insights
+              </button>
+              <button
+                class="monitor-subnav-btn"
+                :class="{ active: monitorSubTab === 'security' }"
+                @click="monitorSubTab = 'security'">
+                Security
               </button>
             </div>
 
-            <!-- Dashboard Sub-Tab -->
-            <div v-if="monitorSubTab === 'dashboard'">
+            <!-- Performance Sub-Tab -->
+            <div v-if="monitorSubTab === 'performance'">
               <!-- Live Agent Dashboard -->
               <div v-if="agent.status === 'live'" class="live-dashboard">
                 <div class="dashboard-header">
@@ -1529,86 +1535,6 @@ Policies:
                       <div class="metric-value-med">4.3/5</div>
                       <div class="metric-subtext">AI-assessed satisfaction</div>
                     </div>
-                  </div>
-                </div>
-
-                <!-- Suggested Skills -->
-                <div class="suggested-skills-section">
-                  <h4 class="section-heading">Suggested Skills</h4>
-                  <p class="section-subtitle-small">Discovered from conversation patterns</p>
-                  <div class="suggested-skills-list">
-                    <div class="suggested-skill-card">
-                      <div class="skill-card-main">
-                        <div class="skill-card-left">
-                          <div class="skill-card-name">Order Status Lookup</div>
-                          <div class="skill-card-frequency">47 conversations</div>
-                        </div>
-                        <div class="skill-card-right">
-                          <div class="confidence-badge high">92%</div>
-                          <button class="btn-secondary-sm">Add Skill</button>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="suggested-skill-card">
-                      <div class="skill-card-main">
-                        <div class="skill-card-left">
-                          <div class="skill-card-name">Refund Processing</div>
-                          <div class="skill-card-frequency">31 conversations</div>
-                        </div>
-                        <div class="skill-card-right">
-                          <div class="confidence-badge high">85%</div>
-                          <button class="btn-secondary-sm">Add Skill</button>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="suggested-skill-card">
-                      <div class="skill-card-main">
-                        <div class="skill-card-left">
-                          <div class="skill-card-name">Account Password Reset</div>
-                          <div class="skill-card-frequency">23 conversations</div>
-                        </div>
-                        <div class="skill-card-right">
-                          <div class="confidence-badge medium">78%</div>
-                          <button class="btn-secondary-sm">Add Skill</button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <router-link :to="`/agents-v2/${agent.id}/build?section=skills`" class="view-all-link">
-                    View All Suggestions →
-                  </router-link>
-                </div>
-
-                <!-- Notifications -->
-                <div class="notifications-section">
-                  <h4 class="section-heading">Notifications</h4>
-                  <div class="notification-item alert security">
-                    <div class="notification-header">
-                      <span class="notification-title">Security vulnerability detected</span>
-                      <span class="notification-meta">2 hours ago</span>
-                    </div>
-                    <div class="notification-text">High severity: Prompt injection detected in recent evaluation</div>
-                  </div>
-                  <div class="notification-item alert">
-                    <div class="notification-header">
-                      <span class="notification-title">Response time increasing</span>
-                      <span class="notification-meta">Last hour</span>
-                    </div>
-                    <div class="notification-text">Average response time increased by 0.5s in the past hour</div>
-                  </div>
-                  <div class="notification-item">
-                    <div class="notification-header">
-                      <span class="notification-title">Handoff rate spike (12)</span>
-                      <span class="notification-meta">Today</span>
-                    </div>
-                    <div class="notification-text">Agent handoff requests increased by 25% today</div>
-                  </div>
-                  <div class="notification-item">
-                    <div class="notification-header">
-                      <span class="notification-title">Low confidence responses (8)</span>
-                      <span class="notification-meta">Past 6 hours</span>
-                    </div>
-                    <div class="notification-text">8 conversations with confidence below 0.7 threshold</div>
                   </div>
                 </div>
 
@@ -1666,9 +1592,92 @@ Policies:
               </div>
             </div>
 
-            <!-- Traces Sub-Tab -->
-            <div v-if="monitorSubTab === 'traces'">
-              <TracesPanel />
+            <!-- Insights Sub-Tab -->
+            <div v-if="monitorSubTab === 'insights'">
+              <div class="insights-content">
+                <h3>Insights</h3>
+                <p class="subtitle">Discover patterns and improvement opportunities</p>
+
+                <!-- Suggested Skills -->
+                <div class="suggested-skills-section">
+                  <h4 class="section-heading">Suggested Skills</h4>
+                  <p class="section-subtitle-small">Discovered from conversation patterns</p>
+                  <div class="suggested-skills-list">
+                    <div class="suggested-skill-card">
+                      <div class="skill-card-main">
+                        <div class="skill-card-left">
+                          <div class="skill-card-name">Order Status Lookup</div>
+                          <div class="skill-card-frequency">47 conversations</div>
+                        </div>
+                        <div class="skill-card-right">
+                          <div class="confidence-badge high">92%</div>
+                          <button class="btn-secondary-sm">Add Skill</button>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="suggested-skill-card">
+                      <div class="skill-card-main">
+                        <div class="skill-card-left">
+                          <div class="skill-card-name">Refund Processing</div>
+                          <div class="skill-card-frequency">31 conversations</div>
+                        </div>
+                        <div class="skill-card-right">
+                          <div class="confidence-badge high">85%</div>
+                          <button class="btn-secondary-sm">Add Skill</button>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="suggested-skill-card">
+                      <div class="skill-card-main">
+                        <div class="skill-card-left">
+                          <div class="skill-card-name">Account Password Reset</div>
+                          <div class="skill-card-frequency">23 conversations</div>
+                        </div>
+                        <div class="skill-card-right">
+                          <div class="confidence-badge medium">78%</div>
+                          <button class="btn-secondary-sm">Add Skill</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <router-link :to="`/agents-v2/${agent.id}/build?section=skills`" class="view-all-link">
+                    View All Suggestions →
+                  </router-link>
+                </div>
+              </div>
+            </div>
+
+            <!-- Security Sub-Tab -->
+            <div v-if="monitorSubTab === 'security'">
+              <div class="security-content">
+                <h3>Security</h3>
+                <p class="subtitle">Monitor security alerts and vulnerabilities</p>
+
+                <!-- Security Alerts -->
+                <div class="security-alerts-section">
+                  <h4 class="section-heading">Recent Security Alerts</h4>
+                  <div class="notification-item alert security">
+                    <div class="notification-header">
+                      <span class="notification-title">Security vulnerability detected</span>
+                      <span class="notification-meta">2 hours ago</span>
+                    </div>
+                    <div class="notification-text">High severity: Prompt injection detected in recent evaluation</div>
+                  </div>
+                  <div class="notification-item alert">
+                    <div class="notification-header">
+                      <span class="notification-title">PII leakage risk</span>
+                      <span class="notification-meta">1 day ago</span>
+                    </div>
+                    <div class="notification-text">Medium severity: Agent exposed partial customer data in 2 conversations</div>
+                  </div>
+                  <div class="empty-state" style="margin-top: 24px; padding: 40px; text-align: center; color: #999;">
+                    <p>Run security tests in Proving Ground to discover more vulnerabilities</p>
+                    <router-link :to="`/agents-v2/${agent.id}/evaluate`" class="btn-primary" style="margin-top: 16px;">
+                      Go to Proving Ground
+                    </router-link>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1906,7 +1915,7 @@ const autoSaving = ref(false)
 const lastSaved = ref(false)
 const buildMainContent = ref(null)
 const activeBuildSection = ref('configuration')
-const monitorSubTab = ref('dashboard')
+const monitorSubTab = ref('performance')
 const hasUnpublishedChanges = ref(false) // Track if live agent has been edited
 const lastPublishedSnapshot = ref(null) // Store snapshot of last published version
 
@@ -8687,5 +8696,29 @@ textarea.input-field {
   background: #ff4444;
   border-color: #ff4444;
   color: #fff;
+}
+
+/* Insights and Security Content */
+.insights-content,
+.security-content {
+  padding: 40px;
+}
+
+.insights-content h3,
+.security-content h3 {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+}
+
+.insights-content .subtitle,
+.security-content .subtitle {
+  font-size: 14px;
+  color: #666;
+  margin: 0 0 32px 0;
+}
+
+.security-alerts-section {
+  margin-top: 24px;
 }
 </style>
