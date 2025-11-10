@@ -1363,46 +1363,93 @@ Policies:
             <div v-if="monitorSubTab === 'dashboard'">
               <!-- Live Agent Dashboard -->
               <div v-if="agent.status === 'live'" class="live-dashboard">
-                <h3>Live Performance Dashboard</h3>
-
-                <!-- Key Metrics -->
-                <div class="metrics-grid">
-                  <div class="metric-card">
-                    <div class="metric-label">Total Conversations</div>
-                    <div class="metric-value">247</div>
-                    <div class="metric-change positive">↑ 12% this week</div>
-                  </div>
-                  <div class="metric-card">
-                    <div class="metric-label">Deflection Rate</div>
-                    <div class="metric-value">78%</div>
-                    <div class="metric-change positive">↑ 5% this week</div>
-                  </div>
-                  <div class="metric-card">
-                    <div class="metric-label">Avg Response Time</div>
-                    <div class="metric-value">1.2s</div>
-                    <div class="metric-change positive">↓ 0.3s improvement</div>
-                  </div>
-                  <div class="metric-card">
-                    <div class="metric-label">Customer Satisfaction</div>
-                    <div class="metric-value">4.6/5</div>
-                    <div class="metric-change">Based on 89 ratings</div>
-                  </div>
-                  <div class="metric-card">
-                    <div class="metric-label">AI CSAT</div>
-                    <div class="metric-value">4.3/5</div>
-                    <div class="metric-change">AI-assessed satisfaction</div>
+                <div class="dashboard-header">
+                  <h3>Overview</h3>
+                  <div class="time-filter">
+                    <button class="time-btn active">1D</button>
+                    <button class="time-btn">1W</button>
+                    <button class="time-btn">1M</button>
                   </div>
                 </div>
 
-                <!-- Active Status -->
-                <div class="status-card live">
-                  <div class="status-indicator"></div>
+                <!-- Key Metrics Section -->
+                <div class="metrics-section">
+                  <h4 class="section-heading">Key metrics</h4>
+                  <div class="metrics-row">
+                    <div class="metric-item">
+                      <div class="metric-label">Deflection rate</div>
+                      <div class="metric-value-large">78%</div>
+                      <div class="metric-change positive">+5%</div>
+                    </div>
+                    <div class="metric-item">
+                      <div class="metric-label">Total sessions</div>
+                      <div class="metric-value-large">3,145</div>
+                      <div class="metric-change neutral">+12</div>
+                    </div>
+                    <div class="metric-item">
+                      <div class="metric-label">Automated sessions</div>
+                      <div class="metric-value-large">2,372</div>
+                      <div class="metric-change positive">+18</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Performance Metrics -->
+                <div class="metrics-section">
+                  <div class="metrics-row secondary">
+                    <div class="metric-item-small">
+                      <div class="metric-label">Avg Response Time</div>
+                      <div class="metric-value-med">1.2s</div>
+                      <div class="metric-subtext">0.3s improvement</div>
+                    </div>
+                    <div class="metric-item-small">
+                      <div class="metric-label">Customer Satisfaction</div>
+                      <div class="metric-value-med">4.6/5</div>
+                      <div class="metric-subtext">Based on 89 ratings</div>
+                    </div>
+                    <div class="metric-item-small">
+                      <div class="metric-label">AI CSAT</div>
+                      <div class="metric-value-med">4.3/5</div>
+                      <div class="metric-subtext">AI-assessed satisfaction</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Notifications -->
+                <div class="notifications-section">
+                  <h4 class="section-heading">Notifications</h4>
+                  <div class="notification-item alert">
+                    <div class="notification-header">
+                      <span class="notification-title">Response time increasing</span>
+                      <span class="notification-meta">Last hour</span>
+                    </div>
+                    <div class="notification-text">Average response time increased by 0.5s in the past hour</div>
+                  </div>
+                  <div class="notification-item">
+                    <div class="notification-header">
+                      <span class="notification-title">Handoff rate spike (12)</span>
+                      <span class="notification-meta">Today</span>
+                    </div>
+                    <div class="notification-text">Agent handoff requests increased by 25% today</div>
+                  </div>
+                  <div class="notification-item">
+                    <div class="notification-header">
+                      <span class="notification-title">Low confidence responses (8)</span>
+                      <span class="notification-meta">Past 6 hours</span>
+                    </div>
+                    <div class="notification-text">8 conversations with confidence below 0.7 threshold</div>
+                  </div>
+                </div>
+
+                <!-- Status Banner -->
+                <div class="status-banner">
                   <div class="status-info">
                     <div class="status-title">Agent is Live</div>
                     <div class="status-text">Published {{ formatDate(agent.lastPublishedDate) }}</div>
                   </div>
                   <div class="active-channels">
-                    <span v-for="(channel, index) in activeChannelLabels" :key="index" class="active-channel-badge">
+                    <span class="channel-label">Active channels:</span>
+                    <span v-for="(channel, index) in activeChannelLabels" :key="index" class="channel-badge">
                       {{ channel }}
                     </span>
                   </div>
@@ -5892,49 +5939,103 @@ textarea.input-field {
 }
 
 /* MONITOR Tab Styles */
-.live-dashboard h3,
-.draft-dashboard h3 {
-  font-size: 20px;
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.dashboard-header h3 {
+  font-size: 24px;
   font-weight: 600;
-  margin: 0 0 24px 0;
+  margin: 0;
   color: #000;
 }
 
-.metrics-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.metric-card {
-  background: #fff;
+.time-filter {
+  display: flex;
+  gap: 0;
   border: 1px solid #e0e0e0;
-  padding: 20px;
-  border-radius: 6px;
+  border-radius: 4px;
+  overflow: hidden;
 }
 
-.metric-card.historical {
+.time-btn {
+  padding: 8px 16px;
+  background: #fff;
+  border: none;
+  border-right: 1px solid #e0e0e0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.time-btn:last-child {
+  border-right: none;
+}
+
+.time-btn:hover {
   background: #f5f5f5;
-  border-style: dashed;
+}
+
+.time-btn.active {
+  background: #000;
+  color: #fff;
+}
+
+.metrics-section {
+  margin-bottom: 40px;
+}
+
+.section-heading {
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: capitalize;
+  margin: 0 0 16px 0;
+  color: #000;
+}
+
+.metrics-row {
+  display: flex;
+  gap: 24px;
+}
+
+.metrics-row.secondary {
+  gap: 24px;
+}
+
+.metric-item {
+  flex: 1;
 }
 
 .metric-label {
-  font-size: 13px;
+  font-size: 14px;
   color: #666;
   margin-bottom: 8px;
-  font-weight: 500;
+  text-transform: capitalize;
 }
 
-.metric-value {
+.metric-value-large {
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 8px;
+  color: #000;
+}
+
+.metric-value-med {
   font-size: 32px;
   font-weight: 700;
+  line-height: 1;
+  margin-bottom: 4px;
   color: #000;
-  margin-bottom: 6px;
 }
 
 .metric-change {
-  font-size: 12px;
+  font-size: 14px;
   color: #666;
 }
 
@@ -5943,44 +6044,84 @@ textarea.input-field {
   font-weight: 500;
 }
 
-.status-card {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 20px;
-  background: #fff;
-  border: 1px solid #e0e0e0;
-  margin-bottom: 24px;
-  border-radius: 6px;
+.metric-change.neutral {
+  color: #666;
 }
 
-.status-card.live {
-  background: #e8f5e9;
-  border-color: #4caf50;
-}
-
-.status-indicator {
-  width: 16px;
-  height: 16px;
-  background: #4caf50;
-  border-radius: 50%;
-  animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-.status-info {
+.metric-item-small {
   flex: 1;
 }
 
-.status-title {
-  font-size: 16px;
+.metric-subtext {
+  font-size: 13px;
+  color: #999;
+}
+
+.notifications-section {
+  margin-bottom: 40px;
+}
+
+.notification-item {
+  padding: 16px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  margin-bottom: 12px;
+  border-radius: 4px;
+}
+
+.notification-item:last-child {
+  margin-bottom: 0;
+}
+
+.notification-item.alert {
+  border-left: 3px solid #ff9800;
+  background: #fff8f0;
+}
+
+.notification-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.notification-title {
+  font-size: 14px;
   font-weight: 600;
   color: #000;
-  margin-bottom: 4px;
+}
+
+.notification-meta {
+  font-size: 12px;
+  color: #999;
+}
+
+.notification-text {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.5;
+}
+
+.status-banner {
+  padding: 16px;
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.status-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.status-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #000;
 }
 
 .status-text {
@@ -5991,15 +6132,22 @@ textarea.input-field {
 .active-channels {
   display: flex;
   gap: 8px;
+  align-items: center;
 }
 
-.active-channel-badge {
+.channel-label {
+  font-size: 13px;
+  color: #666;
+  margin-right: 8px;
+}
+
+.channel-badge {
   padding: 4px 10px;
   background: #fff;
-  border: 1px solid #4caf50;
-  color: #2e7d32;
-  font-size: 11px;
-  font-weight: 600;
+  border: 1px solid #d0d0d0;
+  color: #000;
+  font-size: 12px;
+  font-weight: 500;
   border-radius: 3px;
 }
 
