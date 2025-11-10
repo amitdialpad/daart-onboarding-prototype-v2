@@ -2332,7 +2332,8 @@ const activeTab = computed(() => {
   if (route.path.includes('/build')) return 'build'
   if (route.path.includes('/test')) return 'test'
   if (route.path.includes('/evaluate')) return 'evaluate'
-  if (route.path.includes('/monitor')) return 'monitor'
+  if (route.path.includes('/analyze')) return 'monitor'  // /analyze route uses monitor tab internally
+  if (route.path.includes('/monitor')) return 'monitor'  // Legacy fallback
   return 'build'
 })
 
