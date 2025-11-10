@@ -1600,10 +1600,252 @@ Policies:
 
             <!-- Performance Sub-Tab -->
             <div v-if="insightsSubTab === 'performance'">
-              <div class="performance-content">
-                <h3>Performance</h3>
-                <p class="subtitle">Detailed performance metrics and trends</p>
-                <p class="coming-soon">📊 Detailed performance analytics coming soon</p>
+              <div v-if="agent.status === 'live'" class="performance-content">
+                <div class="dashboard-header">
+                  <h3>Performance Analytics</h3>
+                  <div class="time-filter">
+                    <button class="time-btn active">1D</button>
+                    <button class="time-btn">1W</button>
+                    <button class="time-btn">1M</button>
+                    <button class="time-btn">3M</button>
+                  </div>
+                </div>
+
+                <!-- Response Time Metrics -->
+                <div class="metrics-section">
+                  <h4 class="section-heading">Response Times</h4>
+                  <div class="metrics-row">
+                    <div class="metric-item">
+                      <div class="metric-label">Average Response Time</div>
+                      <div class="metric-value-large">1.2s</div>
+                      <div class="metric-change positive">-0.3s vs yesterday</div>
+                    </div>
+                    <div class="metric-item">
+                      <div class="metric-label">P95 Response Time</div>
+                      <div class="metric-value-large">2.8s</div>
+                      <div class="metric-change positive">-0.5s vs yesterday</div>
+                    </div>
+                    <div class="metric-item">
+                      <div class="metric-label">P99 Response Time</div>
+                      <div class="metric-value-large">4.1s</div>
+                      <div class="metric-change neutral">+0.1s vs yesterday</div>
+                    </div>
+                  </div>
+                  <div class="chart-placeholder">
+                    📈 Response time trend chart
+                  </div>
+                </div>
+
+                <!-- Conversation Quality Metrics -->
+                <div class="metrics-section">
+                  <h4 class="section-heading">Conversation Quality</h4>
+                  <div class="metrics-row secondary">
+                    <div class="metric-item-small">
+                      <div class="metric-label">Resolution Rate</div>
+                      <div class="metric-value-med">82%</div>
+                      <div class="metric-subtext">2,572 of 3,145 resolved</div>
+                    </div>
+                    <div class="metric-item-small">
+                      <div class="metric-label">Escalation Rate</div>
+                      <div class="metric-value-med">12%</div>
+                      <div class="metric-subtext">377 escalated to human</div>
+                    </div>
+                    <div class="metric-item-small">
+                      <div class="metric-label">Abandonment Rate</div>
+                      <div class="metric-value-med">6%</div>
+                      <div class="metric-subtext">196 conversations abandoned</div>
+                    </div>
+                  </div>
+                  <div class="chart-placeholder">
+                    📊 Conversation outcome distribution
+                  </div>
+                </div>
+
+                <!-- Customer Satisfaction -->
+                <div class="metrics-section">
+                  <h4 class="section-heading">Customer Satisfaction</h4>
+                  <div class="metrics-row">
+                    <div class="metric-item">
+                      <div class="metric-label">CSAT Score</div>
+                      <div class="metric-value-large">4.6/5</div>
+                      <div class="metric-change positive">+0.2 vs last week</div>
+                    </div>
+                    <div class="metric-item">
+                      <div class="metric-label">AI CSAT</div>
+                      <div class="metric-value-large">4.3/5</div>
+                      <div class="metric-change positive">+0.1 vs last week</div>
+                    </div>
+                    <div class="metric-item">
+                      <div class="metric-label">Ratings Received</div>
+                      <div class="metric-value-large">89</div>
+                      <div class="metric-change neutral">28% response rate</div>
+                    </div>
+                  </div>
+                  <div class="satisfaction-breakdown">
+                    <div class="rating-bar">
+                      <span class="rating-label">5 stars</span>
+                      <div class="rating-bar-track">
+                        <div class="rating-bar-fill" style="width: 62%"></div>
+                      </div>
+                      <span class="rating-count">55</span>
+                    </div>
+                    <div class="rating-bar">
+                      <span class="rating-label">4 stars</span>
+                      <div class="rating-bar-track">
+                        <div class="rating-bar-fill" style="width: 22%"></div>
+                      </div>
+                      <span class="rating-count">20</span>
+                    </div>
+                    <div class="rating-bar">
+                      <span class="rating-label">3 stars</span>
+                      <div class="rating-bar-track">
+                        <div class="rating-bar-fill" style="width: 9%"></div>
+                      </div>
+                      <span class="rating-count">8</span>
+                    </div>
+                    <div class="rating-bar">
+                      <span class="rating-label">2 stars</span>
+                      <div class="rating-bar-track">
+                        <div class="rating-bar-fill" style="width: 5%"></div>
+                      </div>
+                      <span class="rating-count">4</span>
+                    </div>
+                    <div class="rating-bar">
+                      <span class="rating-label">1 star</span>
+                      <div class="rating-bar-track">
+                        <div class="rating-bar-fill" style="width: 2%"></div>
+                      </div>
+                      <span class="rating-count">2</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Skill Performance -->
+                <div class="metrics-section">
+                  <h4 class="section-heading">Top Performing Skills</h4>
+                  <div class="skill-performance-list">
+                    <div class="skill-performance-item">
+                      <div class="skill-info">
+                        <div class="skill-name">Order Status Lookup</div>
+                        <div class="skill-usage">842 uses</div>
+                      </div>
+                      <div class="skill-metrics">
+                        <div class="skill-metric">
+                          <span class="metric-mini-label">Success Rate</span>
+                          <span class="metric-mini-value success">96%</span>
+                        </div>
+                        <div class="skill-metric">
+                          <span class="metric-mini-label">Avg Time</span>
+                          <span class="metric-mini-value">0.8s</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="skill-performance-item">
+                      <div class="skill-info">
+                        <div class="skill-name">Refund Processing</div>
+                        <div class="skill-usage">523 uses</div>
+                      </div>
+                      <div class="skill-metrics">
+                        <div class="skill-metric">
+                          <span class="metric-mini-label">Success Rate</span>
+                          <span class="metric-mini-value success">94%</span>
+                        </div>
+                        <div class="skill-metric">
+                          <span class="metric-mini-label">Avg Time</span>
+                          <span class="metric-mini-value">1.3s</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="skill-performance-item">
+                      <div class="skill-info">
+                        <div class="skill-name">Account Management</div>
+                        <div class="skill-usage">387 uses</div>
+                      </div>
+                      <div class="skill-metrics">
+                        <div class="skill-metric">
+                          <span class="metric-mini-label">Success Rate</span>
+                          <span class="metric-mini-value warning">78%</span>
+                        </div>
+                        <div class="skill-metric">
+                          <span class="metric-mini-label">Avg Time</span>
+                          <span class="metric-mini-value">2.1s</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="skill-performance-item">
+                      <div class="skill-info">
+                        <div class="skill-name">Shipping Tracking</div>
+                        <div class="skill-usage">312 uses</div>
+                      </div>
+                      <div class="skill-metrics">
+                        <div class="skill-metric">
+                          <span class="metric-mini-label">Success Rate</span>
+                          <span class="metric-mini-value success">92%</span>
+                        </div>
+                        <div class="skill-metric">
+                          <span class="metric-mini-label">Avg Time</span>
+                          <span class="metric-mini-value">0.9s</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Channel Performance -->
+                <div class="metrics-section">
+                  <h4 class="section-heading">Channel Breakdown</h4>
+                  <div class="channel-performance-grid">
+                    <div class="channel-card">
+                      <div class="channel-header">
+                        <span class="channel-name">Web Chat</span>
+                        <span class="channel-percentage">68%</span>
+                      </div>
+                      <div class="channel-stats">
+                        <div class="channel-stat">
+                          <span class="stat-label">Sessions</span>
+                          <span class="stat-value">2,139</span>
+                        </div>
+                        <div class="channel-stat">
+                          <span class="stat-label">Avg Duration</span>
+                          <span class="stat-value">3m 42s</span>
+                        </div>
+                        <div class="channel-stat">
+                          <span class="stat-label">Resolution Rate</span>
+                          <span class="stat-value">85%</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="channel-card">
+                      <div class="channel-header">
+                        <span class="channel-name">Voice</span>
+                        <span class="channel-percentage">32%</span>
+                      </div>
+                      <div class="channel-stats">
+                        <div class="channel-stat">
+                          <span class="stat-label">Sessions</span>
+                          <span class="stat-value">1,006</span>
+                        </div>
+                        <div class="channel-stat">
+                          <span class="stat-label">Avg Duration</span>
+                          <span class="stat-value">5m 18s</span>
+                        </div>
+                        <div class="channel-stat">
+                          <span class="stat-label">Resolution Rate</span>
+                          <span class="stat-value">76%</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Draft Agent State -->
+              <div v-else class="draft-dashboard">
+                <div class="draft-state-card">
+                  <h3>Performance Data Not Available</h3>
+                  <p>Publish your agent to start collecting performance metrics and analytics.</p>
+                  <button class="btn-primary" @click="navigateToDeploy">Review & Deploy</button>
+                </div>
               </div>
             </div>
 
@@ -8737,5 +8979,193 @@ textarea.input-field {
 
 .security-alerts-section {
   margin-top: 24px;
+}
+
+/* Performance Tab Styles */
+.performance-content {
+  padding: 40px;
+}
+
+.performance-content h3 {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.chart-placeholder {
+  margin-top: 16px;
+  padding: 60px;
+  background: #fafafa;
+  border: 1px dashed #d0d0d0;
+  border-radius: 6px;
+  text-align: center;
+  color: #999;
+  font-size: 14px;
+}
+
+.satisfaction-breakdown {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rating-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rating-label {
+  font-size: 13px;
+  color: #666;
+  width: 60px;
+  flex-shrink: 0;
+}
+
+.rating-bar-track {
+  flex: 1;
+  height: 20px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.rating-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4caf50 0%, #81c784 100%);
+  transition: width 0.3s ease;
+}
+
+.rating-count {
+  font-size: 13px;
+  color: #333;
+  font-weight: 500;
+  width: 40px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* Skill Performance List */
+.skill-performance-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skill-performance-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+}
+
+.skill-info {
+  flex: 1;
+}
+
+.skill-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #000;
+  margin-bottom: 4px;
+}
+
+.skill-usage {
+  font-size: 12px;
+  color: #666;
+}
+
+.skill-metrics {
+  display: flex;
+  gap: 24px;
+}
+
+.skill-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.metric-mini-label {
+  font-size: 11px;
+  color: #999;
+  text-transform: uppercase;
+}
+
+.metric-mini-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #000;
+}
+
+.metric-mini-value.success {
+  color: #2e7d32;
+}
+
+.metric-mini-value.warning {
+  color: #f57c00;
+}
+
+/* Channel Performance Grid */
+.channel-performance-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.channel-card {
+  padding: 20px;
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+}
+
+.channel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.channel-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #000;
+}
+
+.channel-percentage {
+  font-size: 20px;
+  font-weight: 600;
+  color: #666;
+}
+
+.channel-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.channel-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: #666;
+}
+
+.stat-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: #000;
 }
 </style>
