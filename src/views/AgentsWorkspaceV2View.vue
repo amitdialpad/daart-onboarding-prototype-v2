@@ -1079,6 +1079,123 @@ Policies:
 
               <AIAssistant context="skills" />
 
+              <!-- Discovered Skills Section -->
+              <div class="discovered-skills-section">
+                <div class="discovered-skills-header">
+                  <div>
+                    <h4 class="discovered-skills-title">Discovered from Conversations</h4>
+                    <p class="discovered-skills-subtitle">Analyzed from 127 conversations</p>
+                  </div>
+                </div>
+
+                <div class="discovered-skills-grid">
+                  <div class="discovered-skill-card">
+                    <div class="discovered-skill-header">
+                      <div class="discovered-skill-title-row">
+                        <div class="discovered-skill-name">Order Status Lookup</div>
+                        <div class="confidence-badge high">92%</div>
+                      </div>
+                      <div class="discovered-skill-description">
+                        Check real-time order status and delivery estimates
+                      </div>
+                    </div>
+                    <div class="discovered-skill-meta">
+                      <span class="meta-item">47 conversations</span>
+                      <span class="meta-divider">·</span>
+                      <span class="meta-item">Last seen 2h ago</span>
+                    </div>
+                    <div class="discovered-skill-example">
+                      <span class="example-label">Example:</span> "Where is my order #12345?"
+                    </div>
+                    <button class="btn-primary-sm">Add to Agent</button>
+                  </div>
+
+                  <div class="discovered-skill-card">
+                    <div class="discovered-skill-header">
+                      <div class="discovered-skill-title-row">
+                        <div class="discovered-skill-name">Refund Processing</div>
+                        <div class="confidence-badge high">85%</div>
+                      </div>
+                      <div class="discovered-skill-description">
+                        Process refund requests and check refund status
+                      </div>
+                    </div>
+                    <div class="discovered-skill-meta">
+                      <span class="meta-item">31 conversations</span>
+                      <span class="meta-divider">·</span>
+                      <span class="meta-item">Last seen 5h ago</span>
+                    </div>
+                    <div class="discovered-skill-example">
+                      <span class="example-label">Example:</span> "I need a refund for my order"
+                    </div>
+                    <button class="btn-primary-sm">Add to Agent</button>
+                  </div>
+
+                  <div class="discovered-skill-card">
+                    <div class="discovered-skill-header">
+                      <div class="discovered-skill-title-row">
+                        <div class="discovered-skill-name">Account Password Reset</div>
+                        <div class="confidence-badge medium">78%</div>
+                      </div>
+                      <div class="discovered-skill-description">
+                        Help customers reset their account passwords
+                      </div>
+                    </div>
+                    <div class="discovered-skill-meta">
+                      <span class="meta-item">23 conversations</span>
+                      <span class="meta-divider">·</span>
+                      <span class="meta-item">Last seen 1d ago</span>
+                    </div>
+                    <div class="discovered-skill-example">
+                      <span class="example-label">Example:</span> "I forgot my password"
+                    </div>
+                    <button class="btn-primary-sm">Add to Agent</button>
+                  </div>
+
+                  <div class="discovered-skill-card">
+                    <div class="discovered-skill-header">
+                      <div class="discovered-skill-title-row">
+                        <div class="discovered-skill-name">Product Availability Check</div>
+                        <div class="confidence-badge medium">74%</div>
+                      </div>
+                      <div class="discovered-skill-description">
+                        Check if products are in stock and when they'll be available
+                      </div>
+                    </div>
+                    <div class="discovered-skill-meta">
+                      <span class="meta-item">19 conversations</span>
+                      <span class="meta-divider">·</span>
+                      <span class="meta-item">Last seen 3h ago</span>
+                    </div>
+                    <div class="discovered-skill-example">
+                      <span class="example-label">Example:</span> "Is the XYZ product in stock?"
+                    </div>
+                    <button class="btn-primary-sm">Add to Agent</button>
+                  </div>
+
+                  <div class="discovered-skill-card">
+                    <div class="discovered-skill-header">
+                      <div class="discovered-skill-title-row">
+                        <div class="discovered-skill-name">Shipping Address Update</div>
+                        <div class="confidence-badge medium">71%</div>
+                      </div>
+                      <div class="discovered-skill-description">
+                        Update shipping address for pending orders
+                      </div>
+                    </div>
+                    <div class="discovered-skill-meta">
+                      <span class="meta-item">15 conversations</span>
+                      <span class="meta-divider">·</span>
+                      <span class="meta-item">Last seen 6h ago</span>
+                    </div>
+                    <div class="discovered-skill-example">
+                      <span class="example-label">Example:</span> "Can I change my delivery address?"
+                    </div>
+                    <button class="btn-primary-sm">Add to Agent</button>
+                  </div>
+                </div>
+              </div>
+
               <!-- Filters and Search -->
               <div class="skills-filters">
                 <input type="text" class="search-input" placeholder="Search skills..." />
@@ -1166,7 +1283,7 @@ Policies:
             </div>
 
 
-            <!-- Visual Builder (Static - from Onboarding) -->
+            <!-- Agent Studio (Static - from Onboarding) -->
             <div v-if="activeBuildSection === 'visual-builder'" id="visual-builder" class="config-section build-section-anchor visual-builder-container">
               <div class="visual-builder-layout">
                 <!-- Left Panel: Conversation Flow Canvas -->
@@ -1226,7 +1343,7 @@ Policies:
 
           </div>
 
-            <!-- Testing Panel (Right Column) - Hide for Visual Builder -->
+            <!-- Testing Panel (Right Column) - Hide for Agent Studio -->
             <div v-if="activeBuildSection !== 'visual-builder'" class="build-testing-panel">
               <TestingPanel v-if="agent" :agent="agent" />
             </div>
@@ -1415,9 +1532,63 @@ Policies:
                   </div>
                 </div>
 
+                <!-- Suggested Skills -->
+                <div class="suggested-skills-section">
+                  <h4 class="section-heading">Suggested Skills</h4>
+                  <p class="section-subtitle-small">Discovered from conversation patterns</p>
+                  <div class="suggested-skills-list">
+                    <div class="suggested-skill-card">
+                      <div class="skill-card-main">
+                        <div class="skill-card-left">
+                          <div class="skill-card-name">Order Status Lookup</div>
+                          <div class="skill-card-frequency">47 conversations</div>
+                        </div>
+                        <div class="skill-card-right">
+                          <div class="confidence-badge high">92%</div>
+                          <button class="btn-secondary-sm">Add Skill</button>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="suggested-skill-card">
+                      <div class="skill-card-main">
+                        <div class="skill-card-left">
+                          <div class="skill-card-name">Refund Processing</div>
+                          <div class="skill-card-frequency">31 conversations</div>
+                        </div>
+                        <div class="skill-card-right">
+                          <div class="confidence-badge high">85%</div>
+                          <button class="btn-secondary-sm">Add Skill</button>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="suggested-skill-card">
+                      <div class="skill-card-main">
+                        <div class="skill-card-left">
+                          <div class="skill-card-name">Account Password Reset</div>
+                          <div class="skill-card-frequency">23 conversations</div>
+                        </div>
+                        <div class="skill-card-right">
+                          <div class="confidence-badge medium">78%</div>
+                          <button class="btn-secondary-sm">Add Skill</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <router-link :to="`/agents-v2/${agent.id}/build?section=skills`" class="view-all-link">
+                    View All Suggestions →
+                  </router-link>
+                </div>
+
                 <!-- Notifications -->
                 <div class="notifications-section">
                   <h4 class="section-heading">Notifications</h4>
+                  <div class="notification-item alert security">
+                    <div class="notification-header">
+                      <span class="notification-title">Security vulnerability detected</span>
+                      <span class="notification-meta">2 hours ago</span>
+                    </div>
+                    <div class="notification-text">High severity: Prompt injection detected in recent evaluation</div>
+                  </div>
                   <div class="notification-item alert">
                     <div class="notification-header">
                       <span class="notification-title">Response time increasing</span>
@@ -2117,16 +2288,16 @@ const buildSections = computed(() => {
   if (agent.value?.channels) {
     // Channels & Integrations is now part of Configuration tab
     // Add visual builder for all agents (supports both digital and voice)
-    sections.push({ id: 'visual-builder', label: 'Visual Builder' })
+    sections.push({ id: 'visual-builder', label: 'Agent Studio' })
   } else if (agent.value?.agentType === 'chat') {
     // Old chat agents
     sections.push({ id: 'chat-configuration', label: 'Chat Configuration' })
     sections.push({ id: 'channels', label: 'Channels' })
-    sections.push({ id: 'visual-builder', label: 'Visual Builder' })
+    sections.push({ id: 'visual-builder', label: 'Agent Studio' })
   } else if (agent.value?.agentType === 'phone') {
     // Old voice agents
     sections.push({ id: 'voice-configuration', label: 'Voice Configuration' })
-    sections.push({ id: 'visual-builder', label: 'Visual Builder' })
+    sections.push({ id: 'visual-builder', label: 'Agent Studio' })
   }
 
   return sections
@@ -3572,7 +3743,7 @@ if (typeof window !== 'undefined') {
   overflow: hidden;
 }
 
-/* Full width when Visual Builder is active */
+/* Full width when Agent Studio is active */
 .build-content-wrapper:has(.visual-builder-container) {
   grid-template-columns: 1fr;
 }
@@ -4349,6 +4520,126 @@ textarea.input-field {
   gap: 12px;
 }
 
+/* Discovered Skills Section */
+.discovered-skills-section {
+  margin: 24px 0;
+  padding: 24px;
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+}
+
+.discovered-skills-header {
+  margin-bottom: 20px;
+}
+
+.discovered-skills-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #000;
+  margin: 0 0 4px 0;
+}
+
+.discovered-skills-subtitle {
+  font-size: 13px;
+  color: #666;
+  margin: 0;
+}
+
+.discovered-skills-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.discovered-skill-card {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 16px;
+  transition: all 0.2s;
+}
+
+.discovered-skill-card:hover {
+  border-color: #999;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.discovered-skill-header {
+  margin-bottom: 12px;
+}
+
+.discovered-skill-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.discovered-skill-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #000;
+  flex: 1;
+}
+
+.discovered-skill-description {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.5;
+}
+
+.discovered-skill-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 12px;
+  color: #999;
+}
+
+.meta-item {
+  white-space: nowrap;
+}
+
+.meta-divider {
+  color: #ddd;
+}
+
+.discovered-skill-example {
+  font-size: 12px;
+  color: #666;
+  padding: 8px 12px;
+  background: #fafafa;
+  border-left: 2px solid #e0e0e0;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.example-label {
+  font-weight: 600;
+  color: #000;
+}
+
+.btn-primary-sm {
+  padding: 6px 16px;
+  background: #000;
+  color: #fff;
+  border: 1px solid #000;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.btn-primary-sm:hover {
+  background: #333;
+  border-color: #333;
+}
+
 .skills-filters {
   display: flex;
   justify-content: space-between;
@@ -4503,7 +4794,7 @@ textarea.input-field {
   border: 1px solid #ffe0b2;
 }
 
-/* Visual Builder (Static - from Onboarding) */
+/* Agent Studio (Static - from Onboarding) */
 .visual-builder-container {
   padding: 0 !important;
   margin: 0 !important;
@@ -6057,6 +6348,124 @@ textarea.input-field {
   color: #999;
 }
 
+/* Suggested Skills Section */
+.suggested-skills-section {
+  margin-bottom: 40px;
+}
+
+.section-subtitle-small {
+  font-size: 13px;
+  color: #666;
+  margin: 0 0 16px 0;
+}
+
+.suggested-skills-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.suggested-skill-card {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 16px;
+  transition: border-color 0.2s;
+}
+
+.suggested-skill-card:hover {
+  border-color: #999;
+}
+
+.skill-card-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.skill-card-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.skill-card-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #000;
+  margin-bottom: 4px;
+}
+
+.skill-card-frequency {
+  font-size: 13px;
+  color: #666;
+}
+
+.skill-card-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.confidence-badge {
+  padding: 4px 10px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.confidence-badge.high {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #c8e6c9;
+}
+
+.confidence-badge.medium {
+  background: #fff3e0;
+  color: #e65100;
+  border: 1px solid #ffe0b2;
+}
+
+.confidence-badge.low {
+  background: #ffebee;
+  color: #c62828;
+  border: 1px solid #ffcdd2;
+}
+
+.btn-secondary-sm {
+  padding: 6px 12px;
+  background: #fff;
+  color: #000;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-secondary-sm:hover {
+  background: #f5f5f5;
+  border-color: #999;
+}
+
+.view-all-link {
+  display: inline-block;
+  font-size: 14px;
+  color: #000;
+  text-decoration: none;
+  font-weight: 500;
+  transition: opacity 0.2s;
+}
+
+.view-all-link:hover {
+  opacity: 0.7;
+}
+
 .notifications-section {
   margin-bottom: 40px;
 }
@@ -6076,6 +6485,11 @@ textarea.input-field {
 .notification-item.alert {
   border-left: 3px solid #ff9800;
   background: #fff8f0;
+}
+
+.notification-item.alert.security {
+  border-left: 3px solid #d32f2f;
+  background: #ffebee;
 }
 
 .notification-header {
