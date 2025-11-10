@@ -92,7 +92,12 @@ const routes = [
       },
       {
         path: ':id',
-        redirect: to => `/agents-v2/${to.params.id}/build`
+        redirect: to => `/agents-v2/${to.params.id}/overview`
+      },
+      {
+        path: ':id/overview',
+        name: 'AgentOverviewV2',
+        component: () => import('../views/AgentOverviewView.vue')
       },
       {
         path: ':id/build',
@@ -113,8 +118,13 @@ const routes = [
         props: { activeTab: 'evaluate' }
       },
       {
-        path: ':id/monitor',
-        name: 'AgentMonitorV2',
+        path: ':id/conversations',
+        name: 'AgentConversationsV2',
+        component: () => import('../views/ConversationsView.vue')
+      },
+      {
+        path: ':id/analyze',
+        name: 'AgentAnalyzeV2',
         component: () => import('../views/AgentsWorkspaceV2View.vue'),
         props: { activeTab: 'monitor' }
       },
@@ -124,7 +134,7 @@ const routes = [
         component: () => import('../views/DeployView.vue')
       },
       {
-        path: ':id/traces/:conversationId',
+        path: ':id/conversations/:conversationId',
         name: 'ConversationDetail',
         component: () => import('../views/ConversationDetailView.vue')
       }

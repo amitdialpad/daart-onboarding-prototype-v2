@@ -37,13 +37,13 @@
 
             <!-- Show tabs for selected agent based on status -->
             <div v-if="selectedAgent?.id === agent.id" class="agent-tabs">
-              <!-- Live agents: Monitor first -->
+              <!-- Live agents: Overview first, then Analyze -->
               <template v-if="agent.status === 'live'">
                 <router-link
-                  :to="`/agents-v2/${agent.id}/monitor`"
+                  :to="`/agents-v2/${agent.id}/overview`"
                   class="tab-link"
-                  :class="{ active: currentRoute.includes('/monitor') }">
-                  Monitor
+                  :class="{ active: currentRoute.includes('/overview') }">
+                  Overview
                 </router-link>
                 <router-link
                   :to="`/agents-v2/${agent.id}/build`"
@@ -62,6 +62,18 @@
                   class="tab-link"
                   :class="{ active: currentRoute.includes('/evaluate') }">
                   Proving Ground
+                </router-link>
+                <router-link
+                  :to="`/agents-v2/${agent.id}/conversations`"
+                  class="tab-link"
+                  :class="{ active: currentRoute.includes('/conversations') }">
+                  Conversations
+                </router-link>
+                <router-link
+                  :to="`/agents-v2/${agent.id}/analyze`"
+                  class="tab-link"
+                  :class="{ active: currentRoute.includes('/analyze') }">
+                  Analyze
                 </router-link>
                 <router-link
                   :to="`/agents-v2/${agent.id}/deploy`"
@@ -71,14 +83,13 @@
                 </router-link>
               </template>
 
-              <!-- Draft agents: Show Monitor if has been published before, otherwise no Monitor -->
+              <!-- Draft agents: Overview first, Show Analyze if has been published before -->
               <template v-else>
                 <router-link
-                  v-if="agent.hasBeenPublished"
-                  :to="`/agents-v2/${agent.id}/monitor`"
+                  :to="`/agents-v2/${agent.id}/overview`"
                   class="tab-link"
-                  :class="{ active: currentRoute.includes('/monitor') }">
-                  Monitor
+                  :class="{ active: currentRoute.includes('/overview') }">
+                  Overview
                 </router-link>
                 <router-link
                   :to="`/agents-v2/${agent.id}/build`"
@@ -97,6 +108,20 @@
                   class="tab-link"
                   :class="{ active: currentRoute.includes('/evaluate') }">
                   Proving Ground
+                </router-link>
+                <router-link
+                  v-if="agent.hasBeenPublished"
+                  :to="`/agents-v2/${agent.id}/conversations`"
+                  class="tab-link"
+                  :class="{ active: currentRoute.includes('/conversations') }">
+                  Conversations
+                </router-link>
+                <router-link
+                  v-if="agent.hasBeenPublished"
+                  :to="`/agents-v2/${agent.id}/analyze`"
+                  class="tab-link"
+                  :class="{ active: currentRoute.includes('/analyze') }">
+                  Analyze
                 </router-link>
                 <router-link
                   :to="`/agents-v2/${agent.id}/deploy`"
