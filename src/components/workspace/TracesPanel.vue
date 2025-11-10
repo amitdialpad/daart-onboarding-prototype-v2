@@ -22,93 +22,49 @@
     </div>
 
     <div class="traces-content">
-      <!-- Conversation List -->
-      <div class="conversation-list">
-        <div class="list-header">
-          <span class="col-time">Time</span>
-          <span class="col-channel">Channel</span>
-          <span class="col-outcome">Outcome</span>
-          <span class="col-csat">AI CSAT</span>
-        </div>
-        <div
-          v-for="conv in filteredConversations"
-          :key="conv.id"
-          class="conversation-item"
-          :class="{ selected: selectedConversation?.id === conv.id }"
-          @click="selectConversation(conv)"
-        >
-          <span class="col-time">{{ conv.timestamp }}</span>
-          <span class="col-channel">{{ conv.channel }}</span>
-          <span class="col-outcome">{{ conv.outcome }}</span>
-          <span class="col-csat">{{ conv.aiCsat }}/5</span>
-        </div>
-      </div>
-
-      <!-- Conversation Details -->
-      <div class="conversation-details">
-        <div v-if="selectedConversation">
-          <div class="details-header">
-            <h3>Conversation {{ selectedConversation.id }}</h3>
-            <div class="details-meta">
-              <span>{{ selectedConversation.timestamp }}</span>
-              <span>{{ selectedConversation.channel }}</span>
-              <span>Duration: {{ selectedConversation.duration }}</span>
-              <span>AI CSAT: {{ selectedConversation.aiCsat }}/5</span>
-            </div>
-          </div>
-
-          <!-- Transcript -->
-          <div class="transcript-section">
-            <h4>Transcript</h4>
-            <div class="transcript">
-              <div v-for="(message, idx) in selectedConversation.messages" :key="idx" class="message">
-                <div class="message-header">
-                  <span class="speaker">{{ message.speaker }}</span>
-                  <span class="time">{{ message.time }}</span>
-                </div>
-                <div class="message-text">{{ message.text }}</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Skills & Actions Used -->
-          <div class="skills-section">
-            <h4>Skills & Actions Used</h4>
-            <div class="skills-list">
-              <div v-for="skill in selectedConversation.skillsUsed" :key="skill" class="skill-tag">
-                {{ skill }}
-              </div>
-            </div>
-          </div>
-
-          <!-- Action Outputs -->
-          <div class="actions-section">
-            <h4>Action Outputs</h4>
-            <div v-for="action in selectedConversation.actions" :key="action.id" class="action-item">
-              <div class="action-header">
-                <span class="action-name">{{ action.name }}</span>
-                <span class="action-status">{{ action.status }}</span>
-              </div>
-              <pre class="action-output">{{ action.output }}</pre>
-            </div>
-          </div>
-        </div>
-
-        <div v-else class="no-selection">
-          <p>Select a conversation to view details</p>
-        </div>
-      </div>
+      <table class="conversations-table">
+        <thead>
+          <tr>
+            <th>Conversation ID</th>
+            <th>Time</th>
+            <th>Channel</th>
+            <th>Duration</th>
+            <th>Outcome</th>
+            <th>AI CSAT</th>
+            <th>Skills Used</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="conv in filteredConversations"
+            :key="conv.id"
+            class="conversation-row"
+            @click="viewConversation(conv.id)"
+          >
+            <td class="conv-id">{{ conv.id }}</td>
+            <td>{{ conv.timestamp }}</td>
+            <td>{{ conv.channel }}</td>
+            <td>{{ conv.duration }}</td>
+            <td>{{ conv.outcome }}</td>
+            <td>{{ conv.aiCsat }}/5</td>
+            <td class="skills-cell">{{ conv.skillsUsed.length }} skills</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+
+const router = useRouter()
+const route = useRoute()
 
 const searchQuery = ref('')
 const filterChannel = ref('all')
 const filterOutcome = ref('all')
-const selectedConversation = ref(null)
 
 // Mock conversation data
 const conversations = ref([
@@ -205,8 +161,9 @@ const filteredConversations = computed(() => {
   })
 })
 
-function selectConversation(conv) {
-  selectedConversation.value = conv
+function viewConversation(convId) {
+  const agentId = route.params.id
+  router.push(`/agents-v2/${agentId}/traces/${convId}`)
 }
 </script>
 
@@ -219,8 +176,7 @@ function selectConversation(conv) {
 }
 
 .traces-header {
-  padding: 24px 32px;
-  border-bottom: 1px solid #e0e0e0;
+  padding: 40px 40px 24px 40px;
 }
 
 .traces-header h2 {
@@ -259,177 +215,54 @@ function selectConversation(conv) {
 
 .traces-content {
   flex: 1;
-  display: grid;
-  grid-template-columns: 500px 1fr;
-  overflow: hidden;
-}
-
-/* Conversation List */
-.conversation-list {
-  border-right: 1px solid #e0e0e0;
   overflow-y: auto;
-  background: #fafafa;
+  padding: 0 40px 40px 40px;
 }
 
-.list-header {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
-  gap: 12px;
-  padding: 12px 16px;
+.conversations-table {
+  width: 100%;
+  border-collapse: collapse;
   background: #fff;
-  border-bottom: 1px solid #e0e0e0;
+}
+
+.conversations-table thead {
+  position: sticky;
+  top: 0;
+  background: #fafafa;
+  z-index: 1;
+}
+
+.conversations-table th {
+  text-align: left;
+  padding: 12px 16px;
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
   color: #666;
+  border-bottom: 1px solid #e0e0e0;
 }
 
-.conversation-item {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
-  gap: 12px;
-  padding: 16px;
-  border-bottom: 1px solid #e0e0e0;
+.conversation-row {
   cursor: pointer;
   transition: background 0.2s;
-  font-size: 14px;
 }
 
-.conversation-item:hover {
+.conversation-row:hover {
   background: #f5f5f5;
 }
 
-.conversation-item.selected {
-  background: #e8e8e8;
-  font-weight: 500;
-}
-
-/* Conversation Details */
-.conversation-details {
-  padding: 24px;
-  overflow-y: auto;
-}
-
-.details-header h3 {
-  font-size: 20px;
-  font-weight: 600;
-  margin: 0 0 8px 0;
-}
-
-.details-meta {
-  display: flex;
-  gap: 16px;
-  font-size: 13px;
-  color: #666;
-  margin-bottom: 24px;
-}
-
-.transcript-section,
-.skills-section,
-.actions-section {
-  margin-bottom: 32px;
-}
-
-.transcript-section h4,
-.skills-section h4,
-.actions-section h4 {
-  font-size: 16px;
-  font-weight: 600;
-  margin: 0 0 16px 0;
-}
-
-.transcript {
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+.conversations-table td {
   padding: 16px;
-  background: #fafafa;
-}
-
-.message {
-  margin-bottom: 16px;
-}
-
-.message:last-child {
-  margin-bottom: 0;
-}
-
-.message-header {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 4px;
-}
-
-.speaker {
-  font-weight: 600;
-  font-size: 13px;
-}
-
-.time {
-  font-size: 12px;
-  color: #999;
-}
-
-.message-text {
   font-size: 14px;
-  line-height: 1.5;
-  color: #333;
+  border-bottom: 1px solid #e0e0e0;
 }
 
-.skills-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+.conv-id {
+  font-weight: 500;
+  color: #000;
 }
 
-.skill-tag {
-  padding: 6px 12px;
-  background: #f0f0f0;
-  border: 1px solid #d0d0d0;
-  border-radius: 4px;
-  font-size: 13px;
-}
-
-.action-item {
-  margin-bottom: 16px;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  padding: 12px;
-  background: #fafafa;
-}
-
-.action-header {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-.action-name {
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.action-status {
-  font-size: 12px;
+.skills-cell {
   color: #666;
-}
-
-.action-output {
-  font-family: 'Courier New', monospace;
-  font-size: 12px;
-  background: #fff;
-  padding: 12px;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  overflow-x: auto;
-  margin: 0;
-}
-
-.no-selection {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: #999;
-  font-size: 14px;
 }
 </style>

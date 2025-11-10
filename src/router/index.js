@@ -122,6 +122,11 @@ const routes = [
         path: ':id/deploy',
         name: 'AgentDeployV2',
         component: () => import('../views/DeployView.vue')
+      },
+      {
+        path: ':id/traces/:conversationId',
+        name: 'ConversationDetail',
+        component: () => import('../views/ConversationDetailView.vue')
       }
     ]
   },
