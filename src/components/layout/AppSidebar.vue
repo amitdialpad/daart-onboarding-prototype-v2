@@ -58,6 +58,12 @@
                   Test
                 </router-link>
                 <router-link
+                  :to="`/agents-v2/${agent.id}/evaluate`"
+                  class="tab-link"
+                  :class="{ active: currentRoute.includes('/evaluate') }">
+                  Proving Ground
+                </router-link>
+                <router-link
                   :to="`/agents-v2/${agent.id}/deploy`"
                   class="tab-link"
                   :class="{ active: currentRoute.includes('/deploy') }">
@@ -85,6 +91,12 @@
                   class="tab-link"
                   :class="{ active: currentRoute.includes('/test') }">
                   Test
+                </router-link>
+                <router-link
+                  :to="`/agents-v2/${agent.id}/evaluate`"
+                  class="tab-link"
+                  :class="{ active: currentRoute.includes('/evaluate') }">
+                  Proving Ground
                 </router-link>
                 <router-link
                   :to="`/agents-v2/${agent.id}/deploy`"
