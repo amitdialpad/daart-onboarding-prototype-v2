@@ -1,602 +1,252 @@
 <template>
   <div class="sidebar">
-    <div class="sidebar-header">
-      <div class="app-title">Dialpad Agents</div>
-      <a href="#" class="reset-demo-link" @click.prevent="resetDemo">Reset Demo</a>
-    </div>
+    <div class="sidebar-content">
+      <!-- Logo -->
+      <div class="logo-section">
+        <h1 class="logo">DAART</h1>
+      </div>
 
-    <nav class="sidebar-nav">
-      <!-- Home Section -->
+      <!-- Agent-Specific Navigation (only show when on agent pages) -->
+      <div v-if="selectedAgent" class="nav-section">
+        <router-link
+          :to="`/agents-v2/${selectedAgent.id}/overview`"
+          class="nav-link"
+          :class="{ active: isPageActive('overview') }">
+          Overview
+        </router-link>
+
+        <router-link
+          :to="`/agents-v2/${selectedAgent.id}/configuration`"
+          class="nav-link"
+          :class="{ active: isPageActive('configuration') }">
+          Configuration
+        </router-link>
+
+        <router-link
+          :to="`/agents-v2/${selectedAgent.id}/knowledge-sources`"
+          class="nav-link"
+          :class="{ active: isPageActive('knowledge-sources') }">
+          Knowledge Sources
+        </router-link>
+
+        <router-link
+          :to="`/agents-v2/${selectedAgent.id}/skills`"
+          class="nav-link"
+          :class="{ active: isPageActive('skills') }">
+          Skills
+        </router-link>
+
+        <router-link
+          :to="`/agents-v2/${selectedAgent.id}/agent-studio`"
+          class="nav-link"
+          :class="{ active: isPageActive('agent-studio') }">
+          Agent Studio
+        </router-link>
+
+        <router-link
+          :to="`/agents-v2/${selectedAgent.id}/test`"
+          class="nav-link"
+          :class="{ active: isPageActive('test') }">
+          Test
+        </router-link>
+
+        <router-link
+          :to="`/agents-v2/${selectedAgent.id}/conversations`"
+          class="nav-link"
+          :class="{ active: isPageActive('conversations') }">
+          Conversations
+        </router-link>
+
+        <router-link
+          :to="`/agents-v2/${selectedAgent.id}/evaluate`"
+          class="nav-link"
+          :class="{ active: isPageActive('evaluate') }">
+          Evaluate
+        </router-link>
+
+        <router-link
+          v-if="selectedAgent.hasBeenPublished || selectedAgent.status === 'live'"
+          :to="`/agents-v2/${selectedAgent.id}/skill-mining`"
+          class="nav-link"
+          :class="{ active: isPageActive('skill-mining') }">
+          Suggested Skills
+        </router-link>
+
+        <router-link
+          :to="`/agents-v2/${selectedAgent.id}/security`"
+          class="nav-link"
+          :class="{ active: isPageActive('security') }">
+          Security
+        </router-link>
+
+        <router-link
+          :to="`/agents-v2/${selectedAgent.id}/deploy`"
+          class="nav-link"
+          :class="{ active: isPageActive('deploy') }">
+          Deploy
+        </router-link>
+
+        <!-- Divider -->
+        <div class="nav-divider"></div>
+      </div>
+
+      <!-- Workspace-Wide Navigation -->
       <div class="nav-section">
-        <router-link to="/home" class="section-header-link" :class="{ active: currentRoute === '/home' }">
-          <span class="section-title">Home</span>
+        <router-link
+          to="/knowledge-v2/all-sources"
+          class="nav-link"
+          :class="{ active: currentRoute.includes('/knowledge-v2') }">
+          Knowledge
+        </router-link>
+
+        <router-link
+          to="/analytics-v2"
+          class="nav-link"
+          :class="{ active: currentRoute.includes('/analytics-v2') }">
+          Analytics
+        </router-link>
+
+        <router-link
+          to="/billing-v2"
+          class="nav-link"
+          :class="{ active: currentRoute.includes('/billing-v2') }">
+          Billing
+        </router-link>
+
+        <router-link
+          to="/settings-v2"
+          class="nav-link"
+          :class="{ active: currentRoute.includes('/settings-v2') }">
+          Settings
         </router-link>
       </div>
-
-      <!-- Empty state: Create First Agent -->
-      <div v-if="allAgents.length === 0" class="nav-section">
-        <div class="empty-message">
-          <a href="#" class="create-agent-link" @click.prevent="createNewAgent">+ Create First Agent</a>
-        </div>
-      </div>
-
-      <!-- Each Agent as Top-Level Section -->
-      <div v-for="agent in allAgents" :key="agent.id" class="nav-section agent-section">
-        <div class="section-header" @click="toggleAgentSection(agent.id)">
-          <span class="expand-icon">{{ agentSectionsExpanded[agent.id] ? '▼' : '▶' }}</span>
-          <span class="section-title agent-title" @click.stop="goToAgent(agent)">
-            {{ agent.name }}
-            <span class="agent-status-badge">{{ agent.status === 'live' ? 'Live' : 'Draft' }}</span>
-          </span>
-        </div>
-
-        <!-- Agent Tabs as Direct Children -->
-        <div v-if="agentSectionsExpanded[agent.id]" class="section-content">
-          <!-- Live agents: All tabs -->
-          <template v-if="agent.status === 'live'">
-            <router-link
-              :to="`/agents-v2/${agent.id}/insights`"
-              class="subsection-link"
-              :class="{ active: isAgentTabActive(agent.id, 'insights') }">
-              Insights
-            </router-link>
-            <router-link
-              :to="`/agents-v2/${agent.id}/build`"
-              class="subsection-link"
-              :class="{ active: isAgentTabActive(agent.id, 'build') }">
-              Build
-            </router-link>
-            <router-link
-              :to="`/agents-v2/${agent.id}/test`"
-              class="subsection-link"
-              :class="{ active: isAgentTabActive(agent.id, 'test') }">
-              Test
-            </router-link>
-            <router-link
-              :to="`/agents-v2/${agent.id}/evaluate`"
-              class="subsection-link"
-              :class="{ active: isAgentTabActive(agent.id, 'evaluate') }">
-              Proving Ground
-            </router-link>
-            <router-link
-              :to="`/agents-v2/${agent.id}/conversations`"
-              class="subsection-link"
-              :class="{ active: isAgentTabActive(agent.id, 'conversations') }">
-              Conversations
-            </router-link>
-            <router-link
-              :to="`/agents-v2/${agent.id}/deploy`"
-              class="subsection-link"
-              :class="{ active: isAgentTabActive(agent.id, 'deploy') }">
-              Deploy
-            </router-link>
-          </template>
-
-          <!-- Draft agents: Limited tabs -->
-          <template v-else>
-            <router-link
-              :to="`/agents-v2/${agent.id}/build`"
-              class="subsection-link"
-              :class="{ active: isAgentTabActive(agent.id, 'build') }">
-              Build
-            </router-link>
-            <router-link
-              :to="`/agents-v2/${agent.id}/test`"
-              class="subsection-link"
-              :class="{ active: isAgentTabActive(agent.id, 'test') }">
-              Test
-            </router-link>
-            <router-link
-              :to="`/agents-v2/${agent.id}/evaluate`"
-              class="subsection-link"
-              :class="{ active: isAgentTabActive(agent.id, 'evaluate') }">
-              Proving Ground
-            </router-link>
-            <router-link
-              v-if="agent.hasBeenPublished"
-              :to="`/agents-v2/${agent.id}/conversations`"
-              class="subsection-link"
-              :class="{ active: isAgentTabActive(agent.id, 'conversations') }">
-              Conversations
-            </router-link>
-            <router-link
-              v-if="agent.hasBeenPublished"
-              :to="`/agents-v2/${agent.id}/insights`"
-              class="subsection-link"
-              :class="{ active: isAgentTabActive(agent.id, 'insights') }">
-              Insights
-            </router-link>
-            <router-link
-              :to="`/agents-v2/${agent.id}/deploy`"
-              class="subsection-link"
-              :class="{ active: isAgentTabActive(agent.id, 'deploy') }">
-              Deploy
-            </router-link>
-          </template>
-        </div>
-      </div>
-
-      <!-- Knowledge Section - Only show if agents exist -->
-      <div v-if="allAgents.length > 0" class="nav-section">
-        <div class="section-header">
-          <span class="expand-icon" @click.stop="toggleSection('knowledge')">{{ sectionsExpanded.knowledge ? '▼' : '▶' }}</span>
-          <span class="section-title" @click="navigateToSection('knowledge', '/knowledge-v2/all-sources', 'all-sources')">Knowledge</span>
-        </div>
-
-        <div v-if="sectionsExpanded.knowledge" class="section-content">
-          <router-link to="/knowledge-v2/all-sources" class="subsection-link" :class="{ active: currentRoute.includes('/all-sources') }">
-            All Sources
-          </router-link>
-          <router-link to="/knowledge-v2/documents" class="subsection-link" :class="{ active: currentRoute.includes('/documents') }">
-            Documents
-          </router-link>
-          <router-link to="/knowledge-v2/text-content" class="subsection-link" :class="{ active: currentRoute.includes('/text-content') }">
-            Text Content
-          </router-link>
-          <router-link to="/knowledge-v2/website" class="subsection-link" :class="{ active: currentRoute.includes('/website') }">
-            Website
-          </router-link>
-          <router-link to="/knowledge-v2/conversations" class="subsection-link" :class="{ active: currentRoute.includes('/conversations') }">
-            Conversations
-          </router-link>
-        </div>
-      </div>
-
-      <!-- Analytics Section - Only show if agents exist -->
-      <div v-if="allAgents.length > 0" class="nav-section">
-        <div class="section-header">
-          <span class="expand-icon" @click.stop="toggleSection('analytics')">{{ sectionsExpanded.analytics ? '▼' : '▶' }}</span>
-          <span class="section-title" @click="navigateToSection('analytics', '/analytics-v2', 'live')">Analytics</span>
-        </div>
-
-        <div v-if="sectionsExpanded.analytics" class="section-content">
-          <a href="#live" @click.prevent="scrollToSection('/analytics-v2', 'live')" class="subsection-link" :class="{ active: currentHash === 'live' }">
-            Live
-          </a>
-          <a href="#performance" @click.prevent="scrollToSection('/analytics-v2', 'performance')" class="subsection-link" :class="{ active: currentHash === 'performance' }">
-            Performance
-          </a>
-          <a href="#conversations" @click.prevent="scrollToSection('/analytics-v2', 'conversations')" class="subsection-link" :class="{ active: currentHash === 'conversations' }">
-            Conversations
-          </a>
-          <a href="#feedback" @click.prevent="scrollToSection('/analytics-v2', 'feedback')" class="subsection-link" :class="{ active: currentHash === 'feedback' }">
-            Feedback
-          </a>
-        </div>
-      </div>
-
-      <!-- Billing Section - Only show if agents exist -->
-      <div v-if="allAgents.length > 0" class="nav-section">
-        <div class="section-header">
-          <span class="expand-icon" @click.stop="toggleSection('billing')">{{ sectionsExpanded.billing ? '▼' : '▶' }}</span>
-          <span class="section-title" @click="navigateToSection('billing', '/billing-v2', 'overview')">Billing</span>
-        </div>
-
-        <div v-if="sectionsExpanded.billing" class="section-content">
-          <a href="#overview" @click.prevent="scrollToSection('/billing-v2', 'overview')" class="subsection-link" :class="{ active: currentHash === 'overview' }">
-            Overview
-          </a>
-          <a href="#usage" @click.prevent="scrollToSection('/billing-v2', 'usage')" class="subsection-link" :class="{ active: currentHash === 'usage' }">
-            Usage & Reports
-          </a>
-          <a href="#payment" @click.prevent="scrollToSection('/billing-v2', 'payment')" class="subsection-link" :class="{ active: currentHash === 'payment' }">
-            Payment Methods
-          </a>
-          <a href="#alerts" @click.prevent="scrollToSection('/billing-v2', 'alerts')" class="subsection-link" :class="{ active: currentHash === 'alerts' }">
-            Alerts & Notifications
-          </a>
-        </div>
-      </div>
-
-      <!-- Settings Section - Only show if agents exist -->
-      <div v-if="allAgents.length > 0" class="nav-section">
-        <div class="section-header">
-          <span class="expand-icon" @click.stop="toggleSection('settings')">{{ sectionsExpanded.settings ? '▼' : '▶' }}</span>
-          <span class="section-title" @click="navigateToSection('settings', '/settings-v2', 'account')">Settings</span>
-        </div>
-
-        <div v-if="sectionsExpanded.settings" class="section-content">
-          <a href="#account" @click.prevent="scrollToSection('/settings-v2', 'account')" class="subsection-link" :class="{ active: currentHash === 'account' }">
-            Account
-          </a>
-          <a href="#team" @click.prevent="scrollToSection('/settings-v2', 'team')" class="subsection-link" :class="{ active: currentHash === 'team' }">
-            Team
-          </a>
-          <a href="#integrations" @click.prevent="scrollToSection('/settings-v2', 'integrations')" class="subsection-link" :class="{ active: currentHash === 'integrations' }">
-            Integrations
-          </a>
-          <a href="#api-keys" @click.prevent="scrollToSection('/settings-v2', 'api-keys')" class="subsection-link" :class="{ active: currentHash === 'api-keys' }">
-            API Keys
-          </a>
-          <a href="#audit-log" @click.prevent="scrollToSection('/settings-v2', 'audit-log')" class="subsection-link" :class="{ active: currentHash === 'audit-log' }">
-            Audit Log
-          </a>
-        </div>
-      </div>
-    </nav>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, computed, watch, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 
 const route = useRoute()
-const router = useRouter()
 
 const allAgents = ref([])
-
-// Section expansion state
-const sectionsExpanded = ref({
-  knowledge: false,
-  analytics: false,
-  billing: false,
-  settings: false
-})
-
-// Agent-specific expansion state (object with agentId keys)
-const agentSectionsExpanded = ref({})
+const lastViewedAgentId = ref(null)
 
 const currentRoute = computed(() => route.path)
 
-// Track current hash for active link highlighting
-const currentHash = ref('')
-
-// Get selected agent from route
+// Get selected agent from route, or use last viewed agent
 const selectedAgent = computed(() => {
   const agentId = route.params.id
-  return allAgents.value.find(a => a.id === agentId)
-})
 
-onMounted(() => {
-  loadAgents()
-  autoExpandActiveSection()
-})
+  // If we have an agent ID in the route, use it and remember it
+  if (agentId) {
+    lastViewedAgentId.value = agentId
+    localStorage.setItem('daart-last-viewed-agent', agentId)
+    return allAgents.value.find(a => a.id === agentId) || null
+  }
 
-// Reload agents when route changes (in case new agent created)
-watch(() => route.path, () => {
-  loadAgents()
-  autoExpandActiveSection()
-  // Clear hash when navigating to different route
-  currentHash.value = ''
+  // If no agent ID in route, use the last viewed agent (for workspace pages)
+  if (lastViewedAgentId.value) {
+    return allAgents.value.find(a => a.id === lastViewedAgentId.value) || null
+  }
+
+  return null
 })
 
 function loadAgents() {
   allAgents.value = JSON.parse(localStorage.getItem('daart-agents') || '[]')
-}
 
-function goToAgent(agent) {
-  // Live agents go to INSIGHTS, draft agents go to BUILD
-  if (agent.status === 'live') {
-    router.push(`/agents-v2/${agent.id}/insights`)
-  } else {
-    router.push(`/agents-v2/${agent.id}/build`)
+  // Load last viewed agent ID from localStorage
+  if (!lastViewedAgentId.value) {
+    lastViewedAgentId.value = localStorage.getItem('daart-last-viewed-agent')
   }
 }
 
-function toggleAgentSection(agentId) {
-  agentSectionsExpanded.value[agentId] = !agentSectionsExpanded.value[agentId]
-}
-
-function isAgentTabActive(agentId, tab) {
-  // Check if current route matches this agent and tab
-  if (!route.params.id || route.params.id !== agentId) {
-    return false
-  }
-
-  // Special handling for conversation details - highlight conversations tab
-  if (tab === 'conversations' && route.path.includes('/conversations')) {
+function isPageActive(page) {
+  // Special handling for conversation details - highlight conversations
+  if (page === 'conversations' && route.path.includes('/conversations')) {
     return true
   }
 
-  return route.path.includes(`/agents-v2/${agentId}/${tab}`)
+  // Check for exact page match
+  return route.path.includes(`/${page}`)
 }
 
-function createNewAgent() {
-  // Back up current agents and show empty state for new agent creation
-  const currentAgents = localStorage.getItem('daart-agents')
-  if (currentAgents) {
-    localStorage.setItem('daart-agents-backup', currentAgents)
-  }
+onMounted(() => {
+  loadAgents()
+})
 
-  // Clear current agents to show empty state
-  localStorage.setItem('daart-agents', '[]')
-
-  // Set flags to show "Back to My Agents" option and track that this is not first agent
-  localStorage.setItem('daart-creating-new-agent', 'true')
-  localStorage.setItem('daart-was-creating-new-agent', 'true')
-
-  // Clear any previous onboarding data
-  localStorage.removeItem('daart-building-agent')
-  localStorage.removeItem('daart-just-completed-onboarding')
-  localStorage.removeItem('daart-selected-scenario')
-
-  // Navigate to home using full URL to ensure reload at correct location
-  // Preserve base path for GitHub Pages deployment
-  const basePath = window.location.pathname.split('#')[0]
-  window.location.href = window.location.origin + basePath + '#/home'
-}
-
-function toggleSection(section) {
-  sectionsExpanded.value[section] = !sectionsExpanded.value[section]
-}
-
-function autoExpandActiveSection() {
-  // Auto-expand section based on current route
-  if (currentRoute.value.includes('/agents-v2')) {
-    // Auto-expand the current agent's section
-    const agentId = route.params.id
-    if (agentId) {
-      agentSectionsExpanded.value[agentId] = true
-    }
-  } else if (currentRoute.value.includes('/knowledge-v2')) {
-    sectionsExpanded.value.knowledge = true
-  } else if (currentRoute.value.includes('/analytics-v2')) {
-    sectionsExpanded.value.analytics = true
-  } else if (currentRoute.value.includes('/billing-v2')) {
-    sectionsExpanded.value.billing = true
-  } else if (currentRoute.value.includes('/settings-v2')) {
-    sectionsExpanded.value.settings = true
-  }
-}
-
-function navigateToSection(section, routePath, defaultSectionId) {
-  // Expand the section
-  sectionsExpanded.value[section] = true
-
-  // Navigate to the page and scroll to the first section
-  scrollToSection(routePath, defaultSectionId)
-}
-
-function scrollToSection(routePath, sectionId) {
-  // Navigate to route if not already there
-  if (route.path !== routePath) {
-    router.push(routePath).then(() => {
-      // Wait for route to load, then scroll
-      setTimeout(() => {
-        scrollToElement(sectionId)
-      }, 100)
-    })
-  } else {
-    // Already on the route, just scroll
-    scrollToElement(sectionId)
-  }
-
-  // Update current hash for active link highlighting (but don't change URL)
-  currentHash.value = sectionId
-}
-
-function scrollToElement(sectionId) {
-  const element = document.getElementById(sectionId)
-  if (element) {
-    element.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
-}
-
-function resetDemo() {
-  if (confirm('This will clear all demo data and reload the page. Continue?')) {
-    localStorage.clear()
-    window.location.href = window.location.origin + window.location.pathname + '#/onboarding-v2'
-  }
-}
+// Reload agents when route changes
+watch(() => route.path, () => {
+  loadAgents()
+})
 </script>
 
 <style scoped>
 .sidebar {
   width: 240px;
   background: #fafafa;
-  border-right: 1px solid #ddd;
+  border-right: 1px solid #e0e0e0;
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  flex-shrink: 0;
+}
+
+.sidebar-content {
+  flex: 1;
   overflow-y: auto;
+  padding: 20px 0;
 }
 
-.sidebar-header {
-  padding: 20px;
-  border-bottom: 1px solid #ddd;
+/* Logo */
+.logo-section {
+  padding: 0 20px 24px 20px;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 16px;
 }
 
-.app-title {
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 8px;
+.logo {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  margin: 0;
   color: #000;
 }
 
-.reset-demo-link {
-  font-size: 12px;
-  color: #333;
-  text-decoration: none;
-}
-
-.reset-demo-link:hover {
-  text-decoration: underline;
-  color: #000;
-}
-
-.sidebar-nav {
-  flex: 1;
-  padding: 8px 0;
-}
-
+/* Navigation Section */
 .nav-section {
-  margin-bottom: 8px;
-}
-
-.section-header {
   display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  user-select: none;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 12px;
 }
 
-.expand-icon {
-  width: 16px;
-  font-size: 10px;
-  color: #999;
-  margin-right: 10px;
-  cursor: pointer;
-  padding: 4px;
-  margin: -4px;
-  transition: color 0.15s;
-}
-
-.expand-icon:hover {
-  color: #000;
-}
-
-.section-title {
+.nav-link {
+  padding: 10px 12px;
   font-size: 14px;
-  font-weight: 700;
-  color: #000;
-  letter-spacing: -0.01em;
-  flex: 1;
-  cursor: pointer;
-  padding: 4px 0;
-  transition: color 0.15s;
-}
-
-.section-title:hover {
-  color: #0066cc;
-}
-
-.section-content {
-  margin-left: 24px;
-  padding-bottom: 8px;
-  border-left: 1px solid #e0e0e0;
-}
-
-.empty-message {
-  padding: 8px 16px;
-}
-
-.agent-item {
-  margin-bottom: 2px;
-}
-
-.agent-link {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 16px;
-  font-size: 13px;
-  color: #000;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.agent-link:hover {
-  background: #f0f0f0;
-}
-
-.agent-link.selected {
-  background: #e8e8e8;
-  font-weight: 600;
-  color: #000;
-}
-
-.agent-section .section-header {
-  cursor: pointer;
-}
-
-.agent-title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-}
-
-.agent-status-badge {
-  font-size: 10px;
-  color: #666;
-  text-transform: uppercase;
-  margin-left: 8px;
-}
-
-.agent-tabs {
-  margin-left: 16px;
-  border-left: 1px solid #e0e0e0;
-  margin-top: 2px;
-  margin-bottom: 4px;
-}
-
-.tab-link {
-  display: block;
-  padding: 6px 16px;
-  font-size: 12px;
-  color: #999;
-  text-decoration: none;
-  transition: all 0.15s;
-}
-
-.tab-link:hover {
-  background: #f5f5f5;
   color: #333;
-}
-
-.tab-link.active {
-  background: #e8e8e8;
-  color: #000;
+  text-decoration: none;
+  border-radius: 6px;
+  transition: all 0.2s;
   font-weight: 500;
 }
 
-.subsection-link {
-  display: block;
-  padding: 8px 16px;
-  font-size: 13px;
-  color: #666;
-  text-decoration: none;
-  transition: all 0.15s;
-  font-weight: 400;
-}
-
-.subsection-link:hover {
-  background: #f5f5f5;
-  color: #000;
-}
-
-.subsection-link.active {
-  background: #e8e8e8;
-  color: #000;
-  font-weight: 500;
-}
-
-.create-agent-link {
-  display: block;
-  padding: 8px 16px;
-  font-size: 13px;
-  color: #666;
-  text-decoration: none;
-  transition: background 0.15s;
-}
-
-.create-agent-link:hover {
+.nav-link:hover {
   background: #f0f0f0;
   color: #000;
 }
 
-.section-header-link {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  text-decoration: none;
-  transition: background 0.15s;
-}
-
-.section-header-link:hover {
-  background: #f0f0f0;
-}
-
-.section-header-link.active {
+.nav-link.active {
   background: #e8e8e8;
+  color: #000;
+  font-weight: 600;
 }
 
-.section-title-single {
-  font-size: 14px;
-  font-weight: 700;
-  color: #000;
-  letter-spacing: -0.01em;
+/* Divider */
+.nav-divider {
+  height: 1px;
+  background: #e0e0e0;
+  margin: 16px 0;
 }
 </style>

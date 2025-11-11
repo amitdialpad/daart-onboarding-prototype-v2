@@ -2,7 +2,44 @@
 
 All notable changes to the DAART Onboarding Prototype.
 
-## [Latest] - 2025-01-09
+## [Latest] - 2025-01-11
+
+### Added - Navigation Restructure (MAJOR UPDATE)
+- **Flat Navigation**: Completely restructured sidebar navigation from nested to flat hierarchy
+- **Agent Dropdown**: Added agent selector dropdown in header for switching between agents
+- **New Routes**: Created dedicated routes for Configuration, Knowledge Sources, and Skills
+- **Overview Tab**: Redesigned with Intercom-style getting started checklist for draft agents
+- **Notifications Sidebar**: Added right sidebar for notifications on live agent Overview page
+- **Reset Demo**: Added Reset Demo option to agent actions menu
+- **Last Viewed Agent**: Implemented persistence for last viewed agent across workspace pages
+
+### Changed - Navigation Structure
+- **Sidebar Layout**: Changed from nested (expandable sections) to flat (all items visible)
+- **Agent Switching**: Moved from sidebar expansion to header dropdown
+- **Build Section**: Split into three separate pages (Configuration, Knowledge Sources, Skills)
+- **Page Names**: Renamed "Insights" to "Overview", "Proving Ground" to "Evaluate"
+- **Default Landing**: Changed default page after onboarding to Overview
+
+### Changed - Overview Page
+- **Removed Sub-tabs**: Eliminated Performance, Skill Mining, Security sub-tabs
+- **Getting Started**: Added 6-step checklist for draft agents
+- **Two-Column Layout**: Metrics on left, notifications on right (for live agents)
+- **Simplified Metrics**: Removed time filter, focused on key metrics
+
+### Fixed - Navigation State
+- **Prop Watchers**: Added watchers to fix stale data when clicking navigation items
+- **State Updates**: Fixed activeBuildSection and insightsSubTab reactive updates
+- **Route Redirects**: Ensured all redirects point to correct destinations
+
+### Improved - User Experience
+- **Faster Navigation**: No clicking to expand/collapse sections
+- **Better Scannability**: All options visible at once
+- **Clearer Hierarchy**: Visual divider separates agent-specific from workspace-wide items
+- **Industry Standard**: Matches Intercom/Sierra navigation patterns
+
+---
+
+## [Previous] - 2025-01-09
 
 ### Added - Sources Page Restructure
 - **Two-Section Layout**: Split Sources page into "Connected sources" and "Available sources"

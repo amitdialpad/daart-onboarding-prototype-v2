@@ -1,7 +1,7 @@
 <template>
   <div class="conversation-detail">
     <div class="detail-header">
-      <button class="back-btn" @click="goBack">Back to Traces</button>
+      <button class="back-btn" @click="goBack">Back to all conversations</button>
       <h2>Conversation {{ conversationId }}</h2>
     </div>
 

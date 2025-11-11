@@ -19,7 +19,7 @@
     <!-- Digital Agent Testing (Chat/SMS) -->
     <div v-if="showChatTesting" class="test-content">
       <div class="test-content-header">
-        <span>{{ props.agent.status === 'live' ? 'Live Conversation Monitor' : 'Digital Agent Testing' }}</span>
+        <span>Test Agent</span>
         <button class="btn-icon" @click="clearMessages">Clear</button>
       </div>
 

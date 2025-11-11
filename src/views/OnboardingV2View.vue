@@ -1789,7 +1789,7 @@ function goToWorkspace() {
   const latestAgent = agents[agents.length - 1]
 
   if (latestAgent) {
-    router.push(`/agents-v2/${latestAgent.id}`)
+    router.push(`/agents-v2/${latestAgent.id}/overview`)
   }
 }
 </script>

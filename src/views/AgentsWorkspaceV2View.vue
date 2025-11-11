@@ -45,6 +45,10 @@
               <button class="dropdown-action delete" @click="confirmDeleteAgent">
                 Delete Agent
               </button>
+              <div class="dropdown-divider"></div>
+              <button class="dropdown-action" @click="resetDemo">
+                Reset Demo
+              </button>
             </div>
           </div>
 
@@ -59,6 +63,9 @@
 
       <!-- Tab Content (NO duplicate tab navigation - it's in sidebar) -->
       <div class="workspace-main">
+        <!-- ============================================ -->
+        <!-- BUILD TAB                                     -->
+        <!-- ============================================ -->
         <!-- BUILD Tab Content -->
         <div v-if="activeTab === 'build'" class="build-layout" :class="{ 'wizard-active': wizardMode }">
           <!-- WIZARD MODE: Full-width wizard steps -->
@@ -370,8 +377,8 @@ Policies:
 
           <!-- EXPERT MODE: Horizontal tabs layout -->
           <template v-else>
-            <!-- Horizontal Build Tabs -->
-            <div class="build-tabs-nav">
+            <!-- Horizontal Build Tabs (hide when using flat navigation) -->
+            <div v-if="!props.buildSection" class="build-tabs-nav">
               <div
                 v-for="section in buildSections"
                 :key="section.id"
@@ -382,10 +389,10 @@ Policies:
               </div>
             </div>
 
-          <!-- Build Content Container (2 columns: main + test panel) -->
+          <!-- Build Content Container (single column) -->
           <div class="build-content-wrapper">
-          <!-- Main Content -->
-          <div class="build-main" ref="buildMainContent">
+            <!-- Main Content -->
+            <div class="build-main" ref="buildMainContent">
             <!-- COMPASS Validation Panel (shows on all sections) -->
             <div v-if="validationMessages.length > 0" class="validation-panel">
               <div class="validation-header" @click="validationExpanded = !validationExpanded">
@@ -413,7 +420,21 @@ Policies:
             <div v-if="activeBuildSection === 'configuration'" id="configuration" class="config-section build-section-anchor">
               <h3>Configuration</h3>
 
-              <AIAssistant context="configuration" />
+              <!-- Suggestions Section (collapsed by default) -->
+              <div class="suggestions-wrapper" :class="{ collapsed: !showSuggestions.configuration }">
+                <div class="suggestions-header" @click="toggleSuggestions('configuration')">
+                  <span class="suggestions-title">Suggestions for this section</span>
+                  <button class="toggle-btn">{{ showSuggestions.configuration ? '−' : '+' }}</button>
+                </div>
+                <div v-if="showSuggestions.configuration" class="suggestions-content">
+                  <div class="suggestion-item">
+                    <p class="suggestion-text">Add greeting message to make conversations more friendly</p>
+                  </div>
+                  <div class="suggestion-item">
+                    <p class="suggestion-text">Enable fallback responses for unrecognized questions</p>
+                  </div>
+                </div>
+              </div>
 
               <div class="form-group">
                 <label>Agent Name</label>
@@ -849,7 +870,21 @@ Policies:
               <h3>Sources</h3>
               <p class="section-intro">Manage knowledge sources for your agent to reference when answering questions</p>
 
-              <AIAssistant context="knowledge" />
+              <!-- Suggestions Section (collapsed by default) -->
+              <div class="suggestions-wrapper" :class="{ collapsed: !showSuggestions.knowledge }">
+                <div class="suggestions-header" @click="toggleSuggestions('knowledge')">
+                  <span class="suggestions-title">Suggestions for this section</span>
+                  <button class="toggle-btn">{{ showSuggestions.knowledge ? '−' : '+' }}</button>
+                </div>
+                <div v-if="showSuggestions.knowledge" class="suggestions-content">
+                  <div class="suggestion-item">
+                    <p class="suggestion-text">Connect your help center documentation for better answers</p>
+                  </div>
+                  <div class="suggestion-item">
+                    <p class="suggestion-text">Add FAQs to improve common question handling</p>
+                  </div>
+                </div>
+              </div>
 
               <!-- Connected Sources Section -->
               <div class="sources-main-section">
@@ -1077,121 +1112,18 @@ Policies:
                 </div>
               </div>
 
-              <AIAssistant context="skills" />
-
-              <!-- Discovered Skills Section -->
-              <div class="discovered-skills-section">
-                <div class="discovered-skills-header">
-                  <div>
-                    <h4 class="discovered-skills-title">Discovered from Conversations</h4>
-                    <p class="discovered-skills-subtitle">Analyzed from 127 conversations</p>
-                  </div>
+              <!-- Suggestions Section (collapsed by default) -->
+              <div class="suggestions-wrapper" :class="{ collapsed: !showSuggestions.skills }">
+                <div class="suggestions-header" @click="toggleSuggestions('skills')">
+                  <span class="suggestions-title">Suggestions for this section</span>
+                  <button class="toggle-btn">{{ showSuggestions.skills ? '−' : '+' }}</button>
                 </div>
-
-                <div class="discovered-skills-grid">
-                  <div class="discovered-skill-card">
-                    <div class="discovered-skill-header">
-                      <div class="discovered-skill-title-row">
-                        <div class="discovered-skill-name">Order Status Lookup</div>
-                        <div class="confidence-badge high">92%</div>
-                      </div>
-                      <div class="discovered-skill-description">
-                        Check real-time order status and delivery estimates
-                      </div>
-                    </div>
-                    <div class="discovered-skill-meta">
-                      <span class="meta-item">47 conversations</span>
-                      <span class="meta-divider">·</span>
-                      <span class="meta-item">Last seen 2h ago</span>
-                    </div>
-                    <div class="discovered-skill-example">
-                      <span class="example-label">Example:</span> "Where is my order #12345?"
-                    </div>
-                    <button class="btn-primary-sm">Add to Agent</button>
+                <div v-if="showSuggestions.skills" class="suggestions-content">
+                  <div class="suggestion-item">
+                    <p class="suggestion-text">Add appointment scheduling skill based on your agent intent</p>
                   </div>
-
-                  <div class="discovered-skill-card">
-                    <div class="discovered-skill-header">
-                      <div class="discovered-skill-title-row">
-                        <div class="discovered-skill-name">Refund Processing</div>
-                        <div class="confidence-badge high">85%</div>
-                      </div>
-                      <div class="discovered-skill-description">
-                        Process refund requests and check refund status
-                      </div>
-                    </div>
-                    <div class="discovered-skill-meta">
-                      <span class="meta-item">31 conversations</span>
-                      <span class="meta-divider">·</span>
-                      <span class="meta-item">Last seen 5h ago</span>
-                    </div>
-                    <div class="discovered-skill-example">
-                      <span class="example-label">Example:</span> "I need a refund for my order"
-                    </div>
-                    <button class="btn-primary-sm">Add to Agent</button>
-                  </div>
-
-                  <div class="discovered-skill-card">
-                    <div class="discovered-skill-header">
-                      <div class="discovered-skill-title-row">
-                        <div class="discovered-skill-name">Account Password Reset</div>
-                        <div class="confidence-badge medium">78%</div>
-                      </div>
-                      <div class="discovered-skill-description">
-                        Help customers reset their account passwords
-                      </div>
-                    </div>
-                    <div class="discovered-skill-meta">
-                      <span class="meta-item">23 conversations</span>
-                      <span class="meta-divider">·</span>
-                      <span class="meta-item">Last seen 1d ago</span>
-                    </div>
-                    <div class="discovered-skill-example">
-                      <span class="example-label">Example:</span> "I forgot my password"
-                    </div>
-                    <button class="btn-primary-sm">Add to Agent</button>
-                  </div>
-
-                  <div class="discovered-skill-card">
-                    <div class="discovered-skill-header">
-                      <div class="discovered-skill-title-row">
-                        <div class="discovered-skill-name">Product Availability Check</div>
-                        <div class="confidence-badge medium">74%</div>
-                      </div>
-                      <div class="discovered-skill-description">
-                        Check if products are in stock and when they'll be available
-                      </div>
-                    </div>
-                    <div class="discovered-skill-meta">
-                      <span class="meta-item">19 conversations</span>
-                      <span class="meta-divider">·</span>
-                      <span class="meta-item">Last seen 3h ago</span>
-                    </div>
-                    <div class="discovered-skill-example">
-                      <span class="example-label">Example:</span> "Is the XYZ product in stock?"
-                    </div>
-                    <button class="btn-primary-sm">Add to Agent</button>
-                  </div>
-
-                  <div class="discovered-skill-card">
-                    <div class="discovered-skill-header">
-                      <div class="discovered-skill-title-row">
-                        <div class="discovered-skill-name">Shipping Address Update</div>
-                        <div class="confidence-badge medium">71%</div>
-                      </div>
-                      <div class="discovered-skill-description">
-                        Update shipping address for pending orders
-                      </div>
-                    </div>
-                    <div class="discovered-skill-meta">
-                      <span class="meta-item">15 conversations</span>
-                      <span class="meta-divider">·</span>
-                      <span class="meta-item">Last seen 6h ago</span>
-                    </div>
-                    <div class="discovered-skill-example">
-                      <span class="example-label">Example:</span> "Can I change my delivery address?"
-                    </div>
-                    <button class="btn-primary-sm">Add to Agent</button>
+                  <div class="suggestion-item">
+                    <p class="suggestion-text">Consider adding customer lookup for personalized responses</p>
                   </div>
                 </div>
               </div>
@@ -1341,16 +1273,14 @@ Policies:
               </div>
             </div>
 
-          </div>
-
-            <!-- Testing Panel (Right Column) - Hide for Agent Studio -->
-            <div v-if="activeBuildSection !== 'visual-builder'" class="build-testing-panel">
-              <TestingPanel v-if="agent" :agent="agent" />
             </div>
           </div>
           </template>
         </div>
 
+        <!-- ============================================ -->
+        <!-- TEST TAB                                      -->
+        <!-- ============================================ -->
         <!-- TEST Tab Content -->
         <div v-else-if="activeTab === 'test'" class="test-layout">
           <div class="test-scenarios-main">
@@ -1452,494 +1382,213 @@ Policies:
           </div>
         </div>
 
+        <!-- ============================================ -->
+        <!-- EVALUATE TAB (Proving Ground)                -->
+        <!-- ============================================ -->
         <!-- EVALUATE Tab Content (Proving Ground) -->
         <div v-else-if="activeTab === 'evaluate'" class="evaluate-tab-layout">
           <ProvingGroundPanel />
         </div>
 
+        <!-- ============================================ -->
+        <!-- INSIGHTS TAB                                  -->
+        <!-- ============================================ -->
         <!-- INSIGHTS Tab Content -->
         <div v-else-if="activeTab === 'insights'" class="monitor-layout">
           <div class="monitor-main">
-            <!-- Insights Sub-Navigation -->
-            <div class="monitor-subnav">
-              <button
-                class="monitor-subnav-btn"
-                :class="{ active: insightsSubTab === 'overview' }"
-                @click="insightsSubTab = 'overview'">
-                Overview
-              </button>
-              <button
-                class="monitor-subnav-btn"
-                :class="{ active: insightsSubTab === 'performance' }"
-                @click="insightsSubTab = 'performance'">
-                Performance
-              </button>
-              <button
-                class="monitor-subnav-btn"
-                :class="{ active: insightsSubTab === 'skill-mining' }"
-                @click="insightsSubTab = 'skill-mining'">
-                Skill Mining
-              </button>
-              <button
-                class="monitor-subnav-btn"
-                :class="{ active: insightsSubTab === 'security' }"
-                @click="insightsSubTab = 'security'">
-                Security
-              </button>
-            </div>
-
-            <!-- Overview Sub-Tab -->
-            <div v-if="insightsSubTab === 'overview'">
+            <!-- Overview Content (No tabs - Overview is now standalone) -->
+            <div>
               <!-- Live Agent Dashboard -->
               <div v-if="agent.status === 'live'" class="live-dashboard">
                 <div class="dashboard-header">
                   <h3>Overview</h3>
-                  <div class="time-filter">
-                    <button class="time-btn active">1D</button>
-                    <button class="time-btn">1W</button>
-                    <button class="time-btn">1M</button>
-                  </div>
                 </div>
 
-                <!-- Key Metrics Section -->
-                <div class="metrics-section">
-                  <h4 class="section-heading">Key metrics</h4>
-                  <div class="metrics-row">
-                    <div class="metric-item">
-                      <div class="metric-label">Deflection rate</div>
-                      <div class="metric-value-large">78%</div>
-                      <div class="metric-change positive">+5%</div>
+                <!-- Two Column Layout -->
+                <div class="overview-layout">
+                  <!-- Main Content Column -->
+                  <div class="overview-main">
+                    <!-- Key Metrics Section -->
+                    <div class="metrics-section">
+                      <h4 class="section-heading">Key metrics</h4>
+                      <div class="metrics-row">
+                        <div class="metric-item">
+                          <div class="metric-label">Deflection rate</div>
+                          <div class="metric-value-large">78%</div>
+                          <div class="metric-change positive">+5%</div>
+                        </div>
+                        <div class="metric-item">
+                          <div class="metric-label">Total sessions</div>
+                          <div class="metric-value-large">3,145</div>
+                          <div class="metric-change neutral">+12</div>
+                        </div>
+                        <div class="metric-item">
+                          <div class="metric-label">Automated sessions</div>
+                          <div class="metric-value-large">2,372</div>
+                          <div class="metric-change positive">+18</div>
+                        </div>
+                      </div>
                     </div>
-                    <div class="metric-item">
-                      <div class="metric-label">Total sessions</div>
-                      <div class="metric-value-large">3,145</div>
-                      <div class="metric-change neutral">+12</div>
-                    </div>
-                    <div class="metric-item">
-                      <div class="metric-label">Automated sessions</div>
-                      <div class="metric-value-large">2,372</div>
-                      <div class="metric-change positive">+18</div>
-                    </div>
-                  </div>
-                </div>
 
-                <!-- Performance Metrics -->
-                <div class="metrics-section">
-                  <div class="metrics-row secondary">
-                    <div class="metric-item-small">
-                      <div class="metric-label">Avg Response Time</div>
-                      <div class="metric-value-med">1.2s</div>
-                      <div class="metric-subtext">0.3s improvement</div>
+                    <!-- Performance Metrics -->
+                    <div class="metrics-section">
+                      <div class="metrics-row secondary">
+                        <div class="metric-item-small">
+                          <div class="metric-label">Avg Response Time</div>
+                          <div class="metric-value-med">1.2s</div>
+                          <div class="metric-subtext">0.3s improvement</div>
+                        </div>
+                        <div class="metric-item-small">
+                          <div class="metric-label">Customer Satisfaction</div>
+                          <div class="metric-value-med">4.6/5</div>
+                          <div class="metric-subtext">Based on 89 ratings</div>
+                        </div>
+                        <div class="metric-item-small">
+                          <div class="metric-label">AI CSAT</div>
+                          <div class="metric-value-med">4.3/5</div>
+                          <div class="metric-subtext">AI-assessed satisfaction</div>
+                        </div>
+                      </div>
                     </div>
-                    <div class="metric-item-small">
-                      <div class="metric-label">Customer Satisfaction</div>
-                      <div class="metric-value-med">4.6/5</div>
-                      <div class="metric-subtext">Based on 89 ratings</div>
-                    </div>
-                    <div class="metric-item-small">
-                      <div class="metric-label">AI CSAT</div>
-                      <div class="metric-value-med">4.3/5</div>
-                      <div class="metric-subtext">AI-assessed satisfaction</div>
-                    </div>
-                  </div>
-                </div>
 
-                <!-- Status Banner -->
-                <div class="status-banner">
-                  <div class="status-info">
-                    <div class="status-title">Agent is Live</div>
-                    <div class="status-text">Published {{ formatDate(agent.lastPublishedDate) }}</div>
+                    <!-- Status Banner -->
+                    <div class="status-banner">
+                      <div class="status-info">
+                        <div class="status-title">Agent is Live</div>
+                        <div class="status-text">Published {{ formatDate(agent.lastPublishedDate) }}</div>
+                      </div>
+                      <div class="active-channels">
+                        <span class="channel-label">Active channels:</span>
+                        <span v-for="(channel, index) in activeChannelLabels" :key="index" class="channel-badge">
+                          {{ channel }}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div class="active-channels">
-                    <span class="channel-label">Active channels:</span>
-                    <span v-for="(channel, index) in activeChannelLabels" :key="index" class="channel-badge">
-                      {{ channel }}
-                    </span>
+
+                  <!-- Notifications Sidebar -->
+                  <div class="overview-sidebar">
+                    <div class="notifications-section">
+                      <h4 class="section-heading">Notifications</h4>
+                      <div class="notification-item alert">
+                        <div class="notification-header">
+                          <span class="notification-title">Connection to Zendesk is broken</span>
+                          <span class="notification-meta">Last synced Feb 20, 2025 19:11</span>
+                        </div>
+                      </div>
+                      <div class="notification-item alert">
+                        <div class="notification-header">
+                          <span class="notification-title">Connection to Aerolabs Digital Channel is broken</span>
+                          <span class="notification-meta">Last synced Feb 20, 2025 19:11</span>
+                        </div>
+                      </div>
+                      <div class="notification-item alert">
+                        <div class="notification-header">
+                          <span class="notification-title">Thumbs down feedback has increased by 71%</span>
+                          <span class="notification-meta">33% increase in the past 24 hours</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <!-- Draft Agent State -->
+              <!-- Draft Agent State - Getting Started Checklist -->
               <div v-else class="draft-dashboard">
-                <div class="draft-state-card">
-                  <h3>Agent Not Published</h3>
-                  <p>This agent is currently in draft mode. Publish it to start accepting conversations and see performance metrics here.</p>
-                  <button class="btn-primary" @click="navigateToDeploy">Review & Deploy</button>
-                </div>
-
-                <!-- Show historical data if agent was published before -->
-                <div v-if="agent.hasBeenPublished" class="historical-data">
-                  <h4>Historical Data</h4>
-                  <p class="historical-note">Last published: {{ formatDate(agent.lastPublishedDate) }}</p>
-
-                  <div class="metrics-grid">
-                    <div class="metric-card historical">
-                      <div class="metric-label">Total Conversations</div>
-                      <div class="metric-value">247</div>
-                      <div class="metric-change">While agent was live</div>
-                    </div>
-                    <div class="metric-card historical">
-                      <div class="metric-label">Deflection Rate</div>
-                      <div class="metric-value">78%</div>
-                      <div class="metric-change">Historical average</div>
-                    </div>
-                    <div class="metric-card historical">
-                      <div class="metric-label">Avg Response Time</div>
-                      <div class="metric-value">1.2s</div>
-                      <div class="metric-change">Historical average</div>
-                    </div>
-                    <div class="metric-card historical">
-                      <div class="metric-label">Customer Satisfaction</div>
-                      <div class="metric-value">4.6/5</div>
-                      <div class="metric-change">Historical average</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Performance Sub-Tab -->
-            <div v-if="insightsSubTab === 'performance'">
-              <div v-if="agent.status === 'live'" class="performance-content">
-                <div class="dashboard-header">
-                  <h3>Performance Analytics</h3>
-                  <div class="time-filter">
-                    <button class="time-btn active">1D</button>
-                    <button class="time-btn">1W</button>
-                    <button class="time-btn">1M</button>
-                    <button class="time-btn">3M</button>
+                <div class="getting-started-header">
+                  <h3>Get your agent ready</h3>
+                  <div class="progress-indicator">
+                    <span class="progress-text">3 / 6 steps complete</span>
                   </div>
                 </div>
 
-                <!-- Response Time Metrics -->
-                <div class="metrics-section">
-                  <h4 class="section-heading">Response Times</h4>
-                  <div class="metrics-row">
-                    <div class="metric-item">
-                      <div class="metric-label">Average Response Time</div>
-                      <div class="metric-value-large">1.2s</div>
-                      <div class="metric-change positive">-0.3s vs yesterday</div>
+                <div class="checklist-container">
+                  <!-- Step 1: Configuration -->
+                  <div class="checklist-item completed">
+                    <div class="checklist-icon">✓</div>
+                    <div class="checklist-content">
+                      <div class="checklist-title">Set up agent configuration</div>
+                      <div class="checklist-description">
+                        Define your agent's name, personality, and instructions
+                      </div>
                     </div>
-                    <div class="metric-item">
-                      <div class="metric-label">P95 Response Time</div>
-                      <div class="metric-value-large">2.8s</div>
-                      <div class="metric-change positive">-0.5s vs yesterday</div>
-                    </div>
-                    <div class="metric-item">
-                      <div class="metric-label">P99 Response Time</div>
-                      <div class="metric-value-large">4.1s</div>
-                      <div class="metric-change neutral">+0.1s vs yesterday</div>
-                    </div>
+                    <router-link :to="`/agents-v2/${agent.id}/configuration`" class="checklist-action">
+                      Edit
+                    </router-link>
                   </div>
-                  <div class="chart-placeholder">
-                    📈 Response time trend chart
-                  </div>
-                </div>
 
-                <!-- Conversation Quality Metrics -->
-                <div class="metrics-section">
-                  <h4 class="section-heading">Conversation Quality</h4>
-                  <div class="metrics-row secondary">
-                    <div class="metric-item-small">
-                      <div class="metric-label">Resolution Rate</div>
-                      <div class="metric-value-med">82%</div>
-                      <div class="metric-subtext">2,572 of 3,145 resolved</div>
+                  <!-- Step 2: Knowledge Sources -->
+                  <div class="checklist-item completed">
+                    <div class="checklist-icon">✓</div>
+                    <div class="checklist-content">
+                      <div class="checklist-title">Add knowledge sources</div>
+                      <div class="checklist-description">
+                        Upload documents, connect websites, or add FAQs for your agent to reference
+                      </div>
                     </div>
-                    <div class="metric-item-small">
-                      <div class="metric-label">Escalation Rate</div>
-                      <div class="metric-value-med">12%</div>
-                      <div class="metric-subtext">377 escalated to human</div>
-                    </div>
-                    <div class="metric-item-small">
-                      <div class="metric-label">Abandonment Rate</div>
-                      <div class="metric-value-med">6%</div>
-                      <div class="metric-subtext">196 conversations abandoned</div>
-                    </div>
+                    <router-link :to="`/agents-v2/${agent.id}/knowledge-sources`" class="checklist-action">
+                      Add sources
+                    </router-link>
                   </div>
-                  <div class="chart-placeholder">
-                    📊 Conversation outcome distribution
-                  </div>
-                </div>
 
-                <!-- Customer Satisfaction -->
-                <div class="metrics-section">
-                  <h4 class="section-heading">Customer Satisfaction</h4>
-                  <div class="metrics-row">
-                    <div class="metric-item">
-                      <div class="metric-label">CSAT Score</div>
-                      <div class="metric-value-large">4.6/5</div>
-                      <div class="metric-change positive">+0.2 vs last week</div>
+                  <!-- Step 3: Skills -->
+                  <div class="checklist-item completed">
+                    <div class="checklist-icon">✓</div>
+                    <div class="checklist-content">
+                      <div class="checklist-title">Configure skills</div>
+                      <div class="checklist-description">
+                        Add skills to enable your agent to take actions like booking appointments
+                      </div>
                     </div>
-                    <div class="metric-item">
-                      <div class="metric-label">AI CSAT</div>
-                      <div class="metric-value-large">4.3/5</div>
-                      <div class="metric-change positive">+0.1 vs last week</div>
-                    </div>
-                    <div class="metric-item">
-                      <div class="metric-label">Ratings Received</div>
-                      <div class="metric-value-large">89</div>
-                      <div class="metric-change neutral">28% response rate</div>
-                    </div>
+                    <router-link :to="`/agents-v2/${agent.id}/skills`" class="checklist-action">
+                      Manage skills
+                    </router-link>
                   </div>
-                  <div class="satisfaction-breakdown">
-                    <div class="rating-bar">
-                      <span class="rating-label">5 stars</span>
-                      <div class="rating-bar-track">
-                        <div class="rating-bar-fill" style="width: 62%"></div>
+
+                  <!-- Step 4: Test -->
+                  <div class="checklist-item">
+                    <div class="checklist-icon">○</div>
+                    <div class="checklist-content">
+                      <div class="checklist-title">Test your agent</div>
+                      <div class="checklist-description">
+                        Try conversations to ensure your agent responds correctly
                       </div>
-                      <span class="rating-count">55</span>
                     </div>
-                    <div class="rating-bar">
-                      <span class="rating-label">4 stars</span>
-                      <div class="rating-bar-track">
-                        <div class="rating-bar-fill" style="width: 22%"></div>
-                      </div>
-                      <span class="rating-count">20</span>
-                    </div>
-                    <div class="rating-bar">
-                      <span class="rating-label">3 stars</span>
-                      <div class="rating-bar-track">
-                        <div class="rating-bar-fill" style="width: 9%"></div>
-                      </div>
-                      <span class="rating-count">8</span>
-                    </div>
-                    <div class="rating-bar">
-                      <span class="rating-label">2 stars</span>
-                      <div class="rating-bar-track">
-                        <div class="rating-bar-fill" style="width: 5%"></div>
-                      </div>
-                      <span class="rating-count">4</span>
-                    </div>
-                    <div class="rating-bar">
-                      <span class="rating-label">1 star</span>
-                      <div class="rating-bar-track">
-                        <div class="rating-bar-fill" style="width: 2%"></div>
-                      </div>
-                      <span class="rating-count">2</span>
-                    </div>
+                    <router-link :to="`/agents-v2/${agent.id}/test`" class="checklist-action">
+                      Test now
+                    </router-link>
                   </div>
-                </div>
 
-                <!-- Skill Performance -->
-                <div class="metrics-section">
-                  <h4 class="section-heading">Top Performing Skills</h4>
-                  <div class="skill-performance-list">
-                    <div class="skill-performance-item">
-                      <div class="skill-info">
-                        <div class="skill-name">Order Status Lookup</div>
-                        <div class="skill-usage">842 uses</div>
-                      </div>
-                      <div class="skill-metrics">
-                        <div class="skill-metric">
-                          <span class="metric-mini-label">Success Rate</span>
-                          <span class="metric-mini-value success">96%</span>
-                        </div>
-                        <div class="skill-metric">
-                          <span class="metric-mini-label">Avg Time</span>
-                          <span class="metric-mini-value">0.8s</span>
-                        </div>
+                  <!-- Step 5: Evaluate -->
+                  <div class="checklist-item">
+                    <div class="checklist-icon">○</div>
+                    <div class="checklist-content">
+                      <div class="checklist-title">Run evaluation</div>
+                      <div class="checklist-description">
+                        Test your agent against multiple scenarios to find issues
                       </div>
                     </div>
-                    <div class="skill-performance-item">
-                      <div class="skill-info">
-                        <div class="skill-name">Refund Processing</div>
-                        <div class="skill-usage">523 uses</div>
-                      </div>
-                      <div class="skill-metrics">
-                        <div class="skill-metric">
-                          <span class="metric-mini-label">Success Rate</span>
-                          <span class="metric-mini-value success">94%</span>
-                        </div>
-                        <div class="skill-metric">
-                          <span class="metric-mini-label">Avg Time</span>
-                          <span class="metric-mini-value">1.3s</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="skill-performance-item">
-                      <div class="skill-info">
-                        <div class="skill-name">Account Management</div>
-                        <div class="skill-usage">387 uses</div>
-                      </div>
-                      <div class="skill-metrics">
-                        <div class="skill-metric">
-                          <span class="metric-mini-label">Success Rate</span>
-                          <span class="metric-mini-value warning">78%</span>
-                        </div>
-                        <div class="skill-metric">
-                          <span class="metric-mini-label">Avg Time</span>
-                          <span class="metric-mini-value">2.1s</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="skill-performance-item">
-                      <div class="skill-info">
-                        <div class="skill-name">Shipping Tracking</div>
-                        <div class="skill-usage">312 uses</div>
-                      </div>
-                      <div class="skill-metrics">
-                        <div class="skill-metric">
-                          <span class="metric-mini-label">Success Rate</span>
-                          <span class="metric-mini-value success">92%</span>
-                        </div>
-                        <div class="skill-metric">
-                          <span class="metric-mini-label">Avg Time</span>
-                          <span class="metric-mini-value">0.9s</span>
-                        </div>
-                      </div>
-                    </div>
+                    <router-link :to="`/agents-v2/${agent.id}/evaluate`" class="checklist-action">
+                      Evaluate
+                    </router-link>
                   </div>
-                </div>
 
-                <!-- Channel Performance -->
-                <div class="metrics-section">
-                  <h4 class="section-heading">Channel Breakdown</h4>
-                  <div class="channel-performance-grid">
-                    <div class="channel-card">
-                      <div class="channel-header">
-                        <span class="channel-name">Web Chat</span>
-                        <span class="channel-percentage">68%</span>
-                      </div>
-                      <div class="channel-stats">
-                        <div class="channel-stat">
-                          <span class="stat-label">Sessions</span>
-                          <span class="stat-value">2,139</span>
-                        </div>
-                        <div class="channel-stat">
-                          <span class="stat-label">Avg Duration</span>
-                          <span class="stat-value">3m 42s</span>
-                        </div>
-                        <div class="channel-stat">
-                          <span class="stat-label">Resolution Rate</span>
-                          <span class="stat-value">85%</span>
-                        </div>
+                  <!-- Step 6: Deploy -->
+                  <div class="checklist-item">
+                    <div class="checklist-icon">○</div>
+                    <div class="checklist-content">
+                      <div class="checklist-title">Deploy your agent</div>
+                      <div class="checklist-description">
+                        Make your agent live and start handling customer conversations
                       </div>
                     </div>
-                    <div class="channel-card">
-                      <div class="channel-header">
-                        <span class="channel-name">Voice</span>
-                        <span class="channel-percentage">32%</span>
-                      </div>
-                      <div class="channel-stats">
-                        <div class="channel-stat">
-                          <span class="stat-label">Sessions</span>
-                          <span class="stat-value">1,006</span>
-                        </div>
-                        <div class="channel-stat">
-                          <span class="stat-label">Avg Duration</span>
-                          <span class="stat-value">5m 18s</span>
-                        </div>
-                        <div class="channel-stat">
-                          <span class="stat-label">Resolution Rate</span>
-                          <span class="stat-value">76%</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Draft Agent State -->
-              <div v-else class="draft-dashboard">
-                <div class="draft-state-card">
-                  <h3>Performance Data Not Available</h3>
-                  <p>Publish your agent to start collecting performance metrics and analytics.</p>
-                  <button class="btn-primary" @click="navigateToDeploy">Review & Deploy</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Skill Mining Sub-Tab -->
-            <div v-if="insightsSubTab === 'skill-mining'">
-              <div class="insights-content">
-                <h3>Insights</h3>
-                <p class="subtitle">Discover patterns and improvement opportunities</p>
-
-                <!-- Suggested Skills -->
-                <div class="suggested-skills-section">
-                  <h4 class="section-heading">Suggested Skills</h4>
-                  <p class="section-subtitle-small">Discovered from conversation patterns</p>
-                  <div class="suggested-skills-list">
-                    <div class="suggested-skill-card">
-                      <div class="skill-card-main">
-                        <div class="skill-card-left">
-                          <div class="skill-card-name">Order Status Lookup</div>
-                          <div class="skill-card-frequency">47 conversations</div>
-                        </div>
-                        <div class="skill-card-right">
-                          <div class="confidence-badge high">92%</div>
-                          <button class="btn-secondary-sm">Add Skill</button>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="suggested-skill-card">
-                      <div class="skill-card-main">
-                        <div class="skill-card-left">
-                          <div class="skill-card-name">Refund Processing</div>
-                          <div class="skill-card-frequency">31 conversations</div>
-                        </div>
-                        <div class="skill-card-right">
-                          <div class="confidence-badge high">85%</div>
-                          <button class="btn-secondary-sm">Add Skill</button>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="suggested-skill-card">
-                      <div class="skill-card-main">
-                        <div class="skill-card-left">
-                          <div class="skill-card-name">Account Password Reset</div>
-                          <div class="skill-card-frequency">23 conversations</div>
-                        </div>
-                        <div class="skill-card-right">
-                          <div class="confidence-badge medium">78%</div>
-                          <button class="btn-secondary-sm">Add Skill</button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <router-link :to="`/agents-v2/${agent.id}/build?section=skills`" class="view-all-link">
-                    View All Suggestions →
-                  </router-link>
-                </div>
-              </div>
-            </div>
-
-            <!-- Security Sub-Tab -->
-            <div v-if="insightsSubTab === 'security'">
-              <div class="security-content">
-                <h3>Security</h3>
-                <p class="subtitle">Monitor security alerts and vulnerabilities</p>
-
-                <!-- Security Alerts -->
-                <div class="security-alerts-section">
-                  <h4 class="section-heading">Recent Security Alerts</h4>
-                  <div class="notification-item alert security">
-                    <div class="notification-header">
-                      <span class="notification-title">Security vulnerability detected</span>
-                      <span class="notification-meta">2 hours ago</span>
-                    </div>
-                    <div class="notification-text">High severity: Prompt injection detected in recent evaluation</div>
-                  </div>
-                  <div class="notification-item alert">
-                    <div class="notification-header">
-                      <span class="notification-title">PII leakage risk</span>
-                      <span class="notification-meta">1 day ago</span>
-                    </div>
-                    <div class="notification-text">Medium severity: Agent exposed partial customer data in 2 conversations</div>
-                  </div>
-                  <div class="empty-state" style="margin-top: 24px; padding: 40px; text-align: center; color: #999;">
-                    <p>Run security tests in Proving Ground to discover more vulnerabilities</p>
-                    <router-link :to="`/agents-v2/${agent.id}/evaluate`" class="btn-primary" style="margin-top: 16px;">
-                      Go to Proving Ground
+                    <router-link :to="`/agents-v2/${agent.id}/deploy`" class="checklist-action-primary">
+                      Deploy
                     </router-link>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-
-          <div class="monitor-panel-wrapper">
-            <TestingPanel v-if="agent" :agent="agent" />
           </div>
         </div>
       </div>
@@ -2161,7 +1810,21 @@ import { useRoute, useRouter } from 'vue-router'
 import TestingPanel from '../components/workspace/TestingPanel.vue'
 import ProvingGroundPanel from '../components/workspace/ProvingGroundPanel.vue'
 import TracesPanel from '../components/workspace/TracesPanel.vue'
-import AIAssistant from '../components/workspace/AIAssistant.vue'
+
+const props = defineProps({
+  activeTab: {
+    type: String,
+    default: 'build'
+  },
+  buildSection: {
+    type: String,
+    default: null
+  },
+  insightsSubTab: {
+    type: String,
+    default: 'overview'
+  }
+})
 
 const route = useRoute()
 const router = useRouter()
@@ -2171,10 +1834,30 @@ const agent = ref(null)
 const autoSaving = ref(false)
 const lastSaved = ref(false)
 const buildMainContent = ref(null)
-const activeBuildSection = ref('configuration')
-const insightsSubTab = ref('overview')
+const activeBuildSection = ref(props.buildSection || 'configuration')
+const insightsSubTab = ref(props.insightsSubTab || 'overview')
 const hasUnpublishedChanges = ref(false) // Track if live agent has been edited
 const lastPublishedSnapshot = ref(null) // Store snapshot of last published version
+
+// Watch for prop changes to update reactive refs
+watch(() => props.buildSection, (newValue) => {
+  if (newValue) {
+    activeBuildSection.value = newValue
+  }
+})
+
+watch(() => props.insightsSubTab, (newValue) => {
+  if (newValue) {
+    insightsSubTab.value = newValue
+  }
+})
+
+// Suggestions collapse state (collapsed by default)
+const showSuggestions = ref({
+  configuration: false,
+  knowledge: false,
+  skills: false
+})
 
 // Test scenarios state
 const showTestBuilderModal = ref(false)
@@ -2553,17 +2236,13 @@ const buildSections = computed(() => {
   // Check if this is an omnichannel agent (new model with channels object)
   if (agent.value?.channels) {
     // Channels & Integrations is now part of Configuration tab
-    // Add visual builder for all agents (supports both digital and voice)
-    sections.push({ id: 'visual-builder', label: 'Agent Studio' })
   } else if (agent.value?.agentType === 'chat') {
     // Old chat agents
     sections.push({ id: 'chat-configuration', label: 'Chat Configuration' })
     sections.push({ id: 'channels', label: 'Channels' })
-    sections.push({ id: 'visual-builder', label: 'Agent Studio' })
   } else if (agent.value?.agentType === 'phone') {
     // Old voice agents
     sections.push({ id: 'voice-configuration', label: 'Voice Configuration' })
-    sections.push({ id: 'visual-builder', label: 'Agent Studio' })
   }
 
   return sections
@@ -2584,8 +2263,15 @@ function toggleConfigSection(section) {
   configSections.value[section] = !configSections.value[section]
 }
 
+function toggleSuggestions(context) {
+  showSuggestions.value[context] = !showSuggestions.value[context]
+}
+
 // Computed
 const activeTab = computed(() => {
+  // Use prop if provided, otherwise fallback to route-based detection
+  if (props.activeTab) return props.activeTab
+
   if (route.path.includes('/build')) return 'build'
   if (route.path.includes('/test')) return 'test'
   if (route.path.includes('/evaluate')) return 'evaluate'
@@ -3071,6 +2757,14 @@ function deleteAgent() {
 
 function closeDeleteModal() {
   showDeleteModal.value = false
+}
+
+function resetDemo() {
+  if (confirm('This will clear all demo data and reload the page. Continue?')) {
+    showActionsMenu.value = false
+    localStorage.clear()
+    window.location.href = window.location.origin + '/#/home'
+  }
 }
 
 // Skill Testing Functions
@@ -4002,10 +3696,10 @@ if (typeof window !== 'undefined') {
   border-bottom-color: #000;
 }
 
-/* Build Content Wrapper (2 columns: main + test panel) */
+/* Build Content Wrapper (single column, test panel removed) */
 .build-content-wrapper {
   display: grid;
-  grid-template-columns: 1fr 350px;
+  grid-template-columns: 1fr;
   gap: 0;
   flex: 1;
   overflow: hidden;
@@ -4033,6 +3727,73 @@ if (typeof window !== 'undefined') {
   font-weight: 600;
   margin: 0 0 20px 0;
   color: #000;
+}
+
+/* Suggestions Section */
+.suggestions-wrapper {
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  background: #fafafa;
+  margin-bottom: 24px;
+}
+
+.suggestions-wrapper.collapsed {
+  background: #fff;
+}
+
+.suggestions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.suggestions-wrapper.collapsed .suggestions-header {
+  border-bottom: none;
+}
+
+.suggestions-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.toggle-btn {
+  background: none;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  color: #666;
+}
+
+.suggestions-content {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.suggestion-item {
+  padding: 12px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+}
+
+.suggestion-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #333;
 }
 
 /* Subsection within config (e.g., Channels within Configuration) */
@@ -4131,10 +3892,10 @@ textarea.input-field {
   overflow: hidden;
 }
 
-/* MONITOR Tab Layout - 2 columns */
+/* MONITOR Tab Layout - single column (test panel removed) */
 .monitor-layout {
   display: grid;
-  grid-template-columns: 1fr 350px;
+  grid-template-columns: 1fr;
   gap: 0;
   height: 100%;
   overflow: hidden;
@@ -4146,39 +3907,140 @@ textarea.input-field {
   background: #fff;
 }
 
-.monitor-subnav {
-  display: flex;
-  gap: 0;
-  border-bottom: 1px solid #e0e0e0;
-  background: #fff;
-  padding: 0 40px;
-}
-
-.monitor-subnav-btn {
-  padding: 16px 24px;
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  color: #666;
-  transition: all 0.2s;
-}
-
-.monitor-subnav-btn:hover {
-  color: #000;
-}
-
-.monitor-subnav-btn.active {
-  color: #000;
-  border-bottom-color: #000;
-  font-weight: 600;
-}
-
 .live-dashboard,
 .draft-dashboard {
   padding: 40px;
+}
+
+/* Getting Started Checklist */
+.getting-started-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.getting-started-header h3 {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0;
+  color: #000;
+}
+
+.progress-indicator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.progress-text {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+.checklist-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 800px;
+}
+
+.checklist-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.checklist-item:hover {
+  border-color: #d0d0d0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.checklist-item.completed {
+  background: #f9f9f9;
+  border-color: #e0e0e0;
+}
+
+.checklist-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 600;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.checklist-item.completed .checklist-icon {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.checklist-item:not(.completed) .checklist-icon {
+  background: #f5f5f5;
+  color: #999;
+  border: 2px solid #e0e0e0;
+}
+
+.checklist-content {
+  flex: 1;
+}
+
+.checklist-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #000;
+  margin-bottom: 4px;
+}
+
+.checklist-description {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.5;
+}
+
+.checklist-action,
+.checklist-action-primary {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.checklist-action {
+  background: #fff;
+  color: #333;
+  border: 1px solid #d0d0d0;
+}
+
+.checklist-action:hover {
+  background: #f5f5f5;
+  border-color: #999;
+  color: #000;
+}
+
+.checklist-action-primary {
+  background: #000;
+  color: #fff;
+  border: 1px solid #000;
+}
+
+.checklist-action-primary:hover {
+  background: #333;
+  border-color: #333;
 }
 
 .monitor-panel-wrapper {
@@ -6734,8 +6596,25 @@ textarea.input-field {
   opacity: 0.7;
 }
 
+/* Overview Two-Column Layout */
+.overview-layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.overview-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.overview-sidebar {
+  width: 320px;
+  flex-shrink: 0;
+}
+
 .notifications-section {
-  margin-bottom: 40px;
+  margin-bottom: 0;
 }
 
 .notification-item {
@@ -7799,6 +7678,12 @@ textarea.input-field {
 
 .dropdown-action.delete:hover {
   background: #ffebee;
+}
+
+.actions-dropdown .dropdown-divider {
+  height: 1px;
+  background: #e0e0e0;
+  margin: 4px 0;
 }
 
 /* Modal Sizes */
@@ -8979,193 +8864,5 @@ textarea.input-field {
 
 .security-alerts-section {
   margin-top: 24px;
-}
-
-/* Performance Tab Styles */
-.performance-content {
-  padding: 40px;
-}
-
-.performance-content h3 {
-  font-size: 24px;
-  font-weight: 600;
-  margin: 0;
-}
-
-.chart-placeholder {
-  margin-top: 16px;
-  padding: 60px;
-  background: #fafafa;
-  border: 1px dashed #d0d0d0;
-  border-radius: 6px;
-  text-align: center;
-  color: #999;
-  font-size: 14px;
-}
-
-.satisfaction-breakdown {
-  margin-top: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.rating-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.rating-label {
-  font-size: 13px;
-  color: #666;
-  width: 60px;
-  flex-shrink: 0;
-}
-
-.rating-bar-track {
-  flex: 1;
-  height: 20px;
-  background: #f0f0f0;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.rating-bar-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #4caf50 0%, #81c784 100%);
-  transition: width 0.3s ease;
-}
-
-.rating-count {
-  font-size: 13px;
-  color: #333;
-  font-weight: 500;
-  width: 40px;
-  text-align: right;
-  flex-shrink: 0;
-}
-
-/* Skill Performance List */
-.skill-performance-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.skill-performance-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px;
-  background: #fafafa;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-}
-
-.skill-info {
-  flex: 1;
-}
-
-.skill-name {
-  font-size: 14px;
-  font-weight: 500;
-  color: #000;
-  margin-bottom: 4px;
-}
-
-.skill-usage {
-  font-size: 12px;
-  color: #666;
-}
-
-.skill-metrics {
-  display: flex;
-  gap: 24px;
-}
-
-.skill-metric {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
-}
-
-.metric-mini-label {
-  font-size: 11px;
-  color: #999;
-  text-transform: uppercase;
-}
-
-.metric-mini-value {
-  font-size: 14px;
-  font-weight: 600;
-  color: #000;
-}
-
-.metric-mini-value.success {
-  color: #2e7d32;
-}
-
-.metric-mini-value.warning {
-  color: #f57c00;
-}
-
-/* Channel Performance Grid */
-.channel-performance-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-}
-
-.channel-card {
-  padding: 20px;
-  background: #fafafa;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-}
-
-.channel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.channel-name {
-  font-size: 16px;
-  font-weight: 600;
-  color: #000;
-}
-
-.channel-percentage {
-  font-size: 20px;
-  font-weight: 600;
-  color: #666;
-}
-
-.channel-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.channel-stat {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.stat-label {
-  font-size: 13px;
-  color: #666;
-}
-
-.stat-value {
-  font-size: 14px;
-  font-weight: 500;
-  color: #000;
 }
 </style>

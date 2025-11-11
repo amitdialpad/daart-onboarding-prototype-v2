@@ -217,19 +217,19 @@
       </div>
     </div>
 
-    <!-- Modal: Open Visual Builder -->
+    <!-- Modal: Open Agent Studio -->
     <div v-if="showVisualBuilderModal" class="modal-overlay" @click="showVisualBuilderModal = false">
       <div class="modal-content small" @click.stop>
         <div class="modal-header">
-          <h3>Open Visual Builder</h3>
+          <h3>Open Agent Studio</h3>
           <button class="modal-close" @click="showVisualBuilderModal = false">×</button>
         </div>
         <div class="modal-body">
           <p class="modal-description">{{ visualBuilderContext }}</p>
-          <p>You can create custom conversation flows in the Visual Workflow Builder.</p>
+          <p>You can create custom conversation flows in Agent Studio.</p>
           <div class="modal-actions">
             <button class="btn-secondary" @click="showVisualBuilderModal = false">Cancel</button>
-            <button class="btn-primary" @click="openVisualBuilder">Open Visual Builder</button>
+            <button class="btn-primary" @click="openVisualBuilder">Open Agent Studio</button>
           </div>
         </div>
       </div>
@@ -473,9 +473,9 @@ function generateSmartResponse(message) {
   // Check for complex workflow needs
   if (lowerMessage.includes('if') && lowerMessage.includes('then') || lowerMessage.includes('when') || lowerMessage.includes('multi-step')) {
     return {
-      content: "This sounds like it might need a custom conversation flow. You can create specific paths for different scenarios using the visual workflow builder.",
+      content: "This sounds like it might need a custom conversation flow. You can create specific paths for different scenarios using Agent Studio.",
       suggestions: [
-        { type: 'workflow', label: 'Open Visual Builder', data: 'complex-flow' }
+        { type: 'workflow', label: 'Open Agent Studio', data: 'complex-flow' }
       ],
       suggestionPrompt: 'Create custom flow:'
     }

@@ -72,7 +72,7 @@
 
           <div class="method-card" @click="selectMethod('workflow')">
             <div class="card-header">
-              <h3>Visual workflow</h3>
+              <h3>Agent Studio</h3>
               <p class="time-estimate">Varies</p>
             </div>
 
@@ -80,7 +80,7 @@
               <div class="best-for-tag">Best for: Full control</div>
 
               <p class="method-description">
-                Use our visual builder to design exactly how your agent should behave
+                Use Agent Studio to design exactly how your agent should behave
                 with workflows and integrations.
               </p>
 

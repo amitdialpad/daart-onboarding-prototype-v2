@@ -48,10 +48,10 @@ const methods = ref([
   {
     id: 'workflow',
     number: '3',
-    title: 'Build with visual builder',
+    title: 'Build with Agent Studio',
     bestFor: 'Best for: Technical users who want full control',
     time: 'Time: Varies',
-    description: 'Use our visual builder to design exactly how your agent should behave with workflows and integrations.'
+    description: 'Use Agent Studio to design exactly how your agent should behave with workflows and integrations.'
   }
 ])
 </script>

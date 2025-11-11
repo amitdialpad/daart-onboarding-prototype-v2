@@ -1,7 +1,7 @@
 # DAART Onboarding Prototype - Project Status
 
-**Last Updated:** January 9, 2025
-**Project Phase:** Active Development - Iteration 3 (Agent Hub & Workspace Refinement)
+**Last Updated:** January 11, 2025
+**Project Phase:** Active Development - Iteration 4 (Navigation Restructure Complete)
 
 ## Overview
 
@@ -46,8 +46,33 @@ This is a Vue 3 prototype for the DAART AI agent onboarding and management platf
   - Simulated agent creation steps
   - Smooth transition to workspace
 
-#### 3. Agent Workspace (Build Tab)
+#### 3. Navigation System (RECENTLY RESTRUCTURED)
+The entire navigation has been redesigned from nested to flat hierarchy:
+
+**New Structure:**
+- **Header**: Agent selector dropdown for switching between agents
+- **Flat Sidebar**: All pages visible at once (no nesting or expanding)
+  - Agent-specific pages: Overview, Configuration, Knowledge Sources, Skills, Agent Studio, Test, Conversations, Evaluate, Suggested Skills, Security, Deploy
+  - Visual divider
+  - Workspace-wide pages: Knowledge, Analytics, Billing, Settings
+- **Smart Routing**: Remembers last viewed agent even on workspace pages
+- **Default Landing**: Always lands on Overview after onboarding
+
+#### 4. Agent Workspace
 The workspace has been completely restructured with a cleaner, more focused interface:
+
+**Overview Section** (NEW DEFAULT PAGE):
+- **Draft Agents**: Intercom-style 6-step getting started checklist
+  - Set up configuration ✓
+  - Add knowledge sources
+  - Configure skills
+  - Test your agent
+  - Review security settings
+  - Deploy to production
+- **Live Agents**: Two-column layout
+  - Left: Key metrics (Deflection rate, Total sessions, Automated sessions, Avg Response Time, Customer Satisfaction, AI CSAT)
+  - Right: Notifications sidebar (connection issues, feedback alerts)
+  - Bottom: Active channels status banner
 
 **Configuration Section:**
 - Agent name and primary channel selection
@@ -95,7 +120,27 @@ The workspace has been completely restructured with a cleaner, more focused inte
 - Vite for development and building
 - GitHub Pages deployment
 
-## Recent Changes (January 9, 2025)
+## Recent Changes (January 11, 2025)
+
+### Navigation Restructure (MAJOR UPDATE)
+- **Flat Hierarchy**: Completely redesigned sidebar from nested to flat structure
+- **Agent Dropdown**: Added header dropdown for switching agents (replaces nested sidebar)
+- **New Routes**: Created separate routes for Configuration, Knowledge Sources, and Skills pages
+- **Overview Redesign**:
+  - Draft agents: 6-step getting started checklist
+  - Live agents: Two-column layout with metrics and notifications sidebar
+- **Reset Demo**: Added to agent actions menu (3-dot menu)
+- **Smart Navigation**: Sidebar remembers last viewed agent across workspace pages
+- **Default Page**: Changed to Overview for all agent creation flows
+
+### Bug Fixes
+- **Navigation State**: Fixed stale data issue when clicking navigation items
+- **Prop Watchers**: Added watchers for buildSection and insightsSubTab updates
+- **Redirect Logic**: Fixed all route redirects to point to correct destinations
+
+---
+
+## Previous Changes (January 9, 2025)
 
 ### Sources Page Restructure
 - Split into two clear sections: "Connected sources" and "Available sources"

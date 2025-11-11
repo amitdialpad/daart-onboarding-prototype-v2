@@ -93,24 +93,46 @@ const routes = [
       {
         path: ':id',
         redirect: to => {
-          // Get agent data to determine default route
-          const agentsData = localStorage.getItem('daart-agents')
-          if (agentsData) {
-            const agents = JSON.parse(agentsData)
-            const agent = agents.find(a => a.id === to.params.id)
-            // Live agents default to insights, draft agents default to build
-            if (agent?.status === 'live') {
-              return `/agents-v2/${to.params.id}/insights`
-            }
-          }
-          return `/agents-v2/${to.params.id}/build`
+          // Always redirect to overview (shows getting started checklist for draft agents)
+          return `/agents-v2/${to.params.id}/overview`
         }
       },
       {
-        path: ':id/build',
-        name: 'AgentBuildV2',
+        path: ':id/overview',
+        name: 'AgentOverviewV2',
         component: () => import('../views/AgentsWorkspaceV2View.vue'),
-        props: { activeTab: 'build' }
+        props: { activeTab: 'insights' }
+      },
+      {
+        path: ':id/configuration',
+        name: 'AgentConfigurationV2',
+        component: () => import('../views/AgentsWorkspaceV2View.vue'),
+        props: { activeTab: 'build', buildSection: 'configuration' }
+      },
+      {
+        path: ':id/knowledge-sources',
+        name: 'AgentKnowledgeSourcesV2',
+        component: () => import('../views/AgentsWorkspaceV2View.vue'),
+        props: { activeTab: 'build', buildSection: 'knowledge-base' }
+      },
+      {
+        path: ':id/skills',
+        name: 'AgentSkillsV2',
+        component: () => import('../views/AgentsWorkspaceV2View.vue'),
+        props: { activeTab: 'build', buildSection: 'skills' }
+      },
+      {
+        path: ':id/build',
+        redirect: to => `/agents-v2/${to.params.id}/configuration`
+      },
+      {
+        path: ':id/insights',
+        redirect: to => `/agents-v2/${to.params.id}/overview`
+      },
+      {
+        path: ':id/agent-studio',
+        name: 'AgentStudioV2',
+        component: () => import('../views/VisualWorkflowView.vue')
       },
       {
         path: ':id/test',
@@ -125,19 +147,24 @@ const routes = [
         props: { activeTab: 'evaluate' }
       },
       {
+        path: ':id/skill-mining',
+        name: 'AgentSkillMiningV2',
+        component: () => import('../views/SkillMiningView.vue')
+      },
+      {
         path: ':id/conversations',
         name: 'AgentConversationsV2',
         component: () => import('../views/ConversationsView.vue')
       },
       {
-        path: ':id/insights',
-        name: 'AgentInsightsV2',
-        component: () => import('../views/AgentsWorkspaceV2View.vue'),
-        props: { activeTab: 'insights' }
+        path: ':id/analyze',
+        redirect: to => `/agents-v2/${to.params.id}/overview`
       },
       {
-        path: ':id/analyze',
-        redirect: to => `/agents-v2/${to.params.id}/insights`
+        path: ':id/security',
+        name: 'AgentSecurityV2',
+        component: () => import('../views/AgentsWorkspaceV2View.vue'),
+        props: { activeTab: 'insights', insightsSubTab: 'security' }
       },
       {
         path: ':id/deploy',

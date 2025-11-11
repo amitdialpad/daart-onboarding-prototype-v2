@@ -1,10 +1,28 @@
 <template>
   <div class="visual-workflow-view">
+    <!-- Agent Header (only show in workspace context) -->
+    <div v-if="agent" class="workspace-header">
+      <div class="header-left">
+        <h1 class="agent-name">{{ agent.name }}</h1>
+        <div class="agent-meta">
+          <span class="meta-badge" :class="agent.status">
+            {{ agent.status === 'live' ? 'Live' : 'Draft' }}
+          </span>
+          <span class="meta-divider">·</span>
+          <span class="meta-type">{{ agentTypeLabel }}</span>
+          <span v-if="activeChannelLabels.length > 0" class="meta-divider">·</span>
+          <span v-for="(channel, index) in activeChannelLabels" :key="index" class="channel-badge">
+            {{ channel }}
+          </span>
+        </div>
+      </div>
+    </div>
+
     <div class="workflow-container">
       <!-- Left Panel: Conversation Flow Canvas -->
       <div class="flow-canvas-panel">
-        <!-- Intent Context -->
-        <div v-if="userIntent" class="intent-context">
+        <!-- Intent Context (only show in onboarding) -->
+        <div v-if="userIntent && !agent" class="intent-context">
           <div class="intent-header">
             <button class="back-btn" @click="goBack">← Back</button>
             <p class="intent-label">Building agent for:</p>
@@ -13,7 +31,7 @@
         </div>
 
         <div class="canvas-header">
-          <h2>Conversation Flow</h2>
+          <h2>Agent Studio</h2>
           <div class="canvas-controls">
             <button class="control-btn" @click="zoomOut">-</button>
             <span class="zoom-level">{{ Math.round(zoom * 100) }}%</span>
@@ -179,9 +197,11 @@
 
 <script setup>
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
+const agent = ref(null)
 const userIntent = ref('')
 const zoom = ref(1)
 const canvasArea = ref(null)
@@ -194,14 +214,50 @@ const aiInput = ref('')
 const isAiTyping = ref(false)
 const aiMessagesContainer = ref(null)
 
-onMounted(() => {
-  // Load intent data
-  const buildData = JSON.parse(localStorage.getItem('daart-building-agent') || '{}')
-  if (!buildData.intent) {
-    router.push('/home')
-    return
+const agentTypeLabel = computed(() => {
+  return agent.value?.agentType === 'phone' ? 'Voice Agent' : 'Digital Agent'
+})
+
+const activeChannelLabels = computed(() => {
+  if (!agent.value) return []
+  const labels = []
+
+  if (agent.value.agentType === 'phone') {
+    labels.push('Voice')
+  } else if (agent.value.agentType === 'chat') {
+    labels.push('Web Chat')
+    if (agent.value.smsEnabled) {
+      labels.push('SMS')
+    }
   }
-  userIntent.value = buildData.intent
+
+  return labels
+})
+
+onMounted(() => {
+  const agentId = route.params.id
+
+  // Check if we're in agent workspace context
+  if (agentId) {
+    // Load agent data from workspace
+    const agentsData = localStorage.getItem('daart-agents')
+    if (agentsData) {
+      const agents = JSON.parse(agentsData)
+      const foundAgent = agents.find(a => a.id === agentId)
+      if (foundAgent) {
+        agent.value = foundAgent
+        userIntent.value = foundAgent.intent || 'Build your agent conversation flow'
+      }
+    }
+  } else {
+    // Original onboarding flow logic
+    const buildData = JSON.parse(localStorage.getItem('daart-building-agent') || '{}')
+    if (!buildData.intent) {
+      router.push('/home')
+      return
+    }
+    userIntent.value = buildData.intent
+  }
 
   // Initial AI greeting
   addAiMessage('assistant', `Hi! I'll help you build a conversation flow for: "${userIntent.value}"\n\nTell me how your agent should handle conversations. For example:\n• "Start by asking for their name"\n• "Ask if they want to book or reschedule"\n• "Handle payment confirmation"`)
@@ -213,13 +269,25 @@ onMounted(() => {
 function goBack() {
   // Save current flow before leaving
   saveFlow()
-  router.push('/build-agent')
+  // Check if we're in the agent workspace context
+  const agentId = route.params.id
+  if (agentId) {
+    router.push(`/agents-v2/${agentId}/build`)
+  } else {
+    router.push('/build-agent')
+  }
 }
 
 function continueToTest() {
   // Save flow and navigate to test/preview
   saveFlow()
-  router.push('/test-agent')
+  // Check if we're in the agent workspace context
+  const agentId = route.params.id
+  if (agentId) {
+    router.push(`/agents-v2/${agentId}/test`)
+  } else {
+    router.push('/test-agent')
+  }
 }
 
 function zoomIn() {
@@ -483,10 +551,76 @@ function loadFlow() {
   height: 100vh;
   background: #fafafa;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Workspace Header */
+.workspace-header {
+  padding: 24px 40px;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  flex-shrink: 0;
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.agent-name {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: #000;
+}
+
+.agent-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: #666;
+}
+
+.meta-badge {
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.meta-badge.draft {
+  background: #f0f0f0;
+  color: #666;
+}
+
+.meta-badge.live {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.meta-divider {
+  color: #999;
+}
+
+.meta-type {
+  font-weight: 500;
+}
+
+.channel-badge {
+  padding: 2px 8px;
+  background: #e0e0e0;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 500;
 }
 
 .workflow-container {
-  height: 100%;
+  flex: 1;
   display: grid;
   grid-template-columns: 1fr 400px;
   overflow: hidden;

@@ -1,5 +1,23 @@
 <template>
   <div class="conversations-view">
+    <!-- Agent Header -->
+    <div v-if="agent" class="workspace-header">
+      <div class="header-left">
+        <h1 class="agent-name">{{ agent.name }}</h1>
+        <div class="agent-meta">
+          <span class="meta-badge" :class="agent.status">
+            {{ agent.status === 'live' ? 'Live' : 'Draft' }}
+          </span>
+          <span class="meta-divider">·</span>
+          <span class="meta-type">{{ agentTypeLabel }}</span>
+          <span v-if="activeChannelLabels.length > 0" class="meta-divider">·</span>
+          <span v-for="(channel, index) in activeChannelLabels" :key="index" class="channel-badge">
+            {{ channel }}
+          </span>
+        </div>
+      </div>
+    </div>
+
     <div class="conversations-header">
       <h2>Conversations</h2>
       <p class="subtitle">View and analyze all agent conversations</p>
@@ -65,15 +83,47 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
 const route = useRoute()
 
+const agent = ref(null)
 const searchQuery = ref('')
 const filterChannel = ref('all')
 const filterOutcome = ref('all')
+
+const agentTypeLabel = computed(() => {
+  return agent.value?.agentType === 'phone' ? 'Voice Agent' : 'Digital Agent'
+})
+
+const activeChannelLabels = computed(() => {
+  if (!agent.value) return []
+  const labels = []
+
+  if (agent.value.agentType === 'phone') {
+    labels.push('Voice')
+  } else if (agent.value.agentType === 'chat') {
+    labels.push('Web Chat')
+    if (agent.value.smsEnabled) {
+      labels.push('SMS')
+    }
+  }
+
+  return labels
+})
+
+onMounted(() => {
+  const agentId = route.params.id
+  if (agentId) {
+    const agentsData = localStorage.getItem('daart-agents')
+    if (agentsData) {
+      const agents = JSON.parse(agentsData)
+      agent.value = agents.find(a => a.id === agentId)
+    }
+  }
+})
 
 // Mock conversation data
 const conversations = ref([
@@ -178,6 +228,70 @@ function viewConversation(convId) {
   display: flex;
   flex-direction: column;
   background: #fff;
+}
+
+/* Workspace Header */
+.workspace-header {
+  padding: 24px 40px;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  flex-shrink: 0;
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.agent-name {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: #000;
+}
+
+.agent-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: #666;
+}
+
+.meta-badge {
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.meta-badge.draft {
+  background: #f0f0f0;
+  color: #666;
+}
+
+.meta-badge.live {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.meta-divider {
+  color: #999;
+}
+
+.meta-type {
+  font-weight: 500;
+}
+
+.channel-badge {
+  padding: 2px 8px;
+  background: #e0e0e0;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 500;
 }
 
 .conversations-header {
